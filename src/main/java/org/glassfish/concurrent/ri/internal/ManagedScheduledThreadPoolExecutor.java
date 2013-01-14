@@ -44,7 +44,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledFuture;
@@ -55,8 +54,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.enterprise.concurrent.LastExecution;
-import javax.enterprise.concurrent.ManagedExecutorService;
-import javax.enterprise.concurrent.ManagedTaskListener;
 import javax.enterprise.concurrent.SkippedException;
 import javax.enterprise.concurrent.Trigger;
 import org.glassfish.concurrent.ri.AbstractManagedExecutorService;
@@ -449,7 +446,22 @@ public class ManagedScheduledThreadPoolExecutor extends ScheduledThreadPoolExecu
                       other.getDelay(TimeUnit.NANOSECONDS));
             return (d == 0) ? 0 : ((d < 0) ? -1 : 1);
         }
+        
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof ManagedScheduledThreadPoolExecutor.ManagedScheduledFutureTask)
+            {
+                return compareTo((ManagedScheduledFutureTask)other) == 0;
+            }
+            return false;
+        }
 
+        @Override
+        public int hashCode() {
+            // using same logic as Long.hashCode()
+            return (int)(sequenceNumber^(sequenceNumber>>>32));
+        }
+        
         /**
          * Returns true if this is a periodic (not a one-shot) action.
          *
@@ -666,9 +678,17 @@ public class ManagedScheduledThreadPoolExecutor extends ScheduledThreadPoolExecu
 
         @Override
         public int compareTo(Delayed o) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return getCurrentFuture().compareTo(o);
         }
 
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof TriggerControllerFuture) {
+                return compareTo((TriggerControllerFuture)other) == 0;
+            }
+            return false;
+        }
+        
         private ManagedTriggerSingleFutureTask<V> getCurrentFuture() {
             try {
                 lock.lock();
