@@ -1,7 +1,7 @@
 <!--
   ~ DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
   ~
-  ~ Copyright (c) 2010-2012 Oracle and/or its affiliates. All rights reserved.
+  ~ Copyright (c) 2010-2013 Oracle and/or its affiliates. All rights reserved.
   ~
   ~ The contents of this file are subject to the terms of either the GNU
   ~ General Public License Version 2 only ("GPL") or the Common Development
@@ -53,7 +53,7 @@
     <artifactId>javax.enterprise.concurrent</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>javax.enterprise.concurrent-ri</name>
+    <name>org.glassfish.javax.enterprise.concurrent</name>
     <description>Reference Implementation for JSR 236 - Concurrency Utilities for Java EE</description>
     <url>http://java.net/projects/cu-javaee</url>
 
@@ -72,7 +72,7 @@
 
     <scm>
         <url>http://java.net/projects/cu-javaee/sources/source-code-repository/show</url>
-        <connection>scm:svn:https://svn.java.net/svn/cu-javaee~source-code-repository</connection>
+        <connection>scm:svn:https://svn.java.net/svn/cu-javaee~source-code-repository/trunk</connection>
     </scm>
 
     <developers>
@@ -104,20 +104,19 @@
             <artifactId>junit</artifactId>
             <version>4.8.2</version>
             <scope>test</scope>
-            <type>jar</type>
         </dependency>
 
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-web-api</artifactId>
             <version>6.0</version>
-            <type>jar</type>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>javax.enterprise.concurrent</groupId>
             <artifactId>javax.enterprise.concurrent-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
@@ -128,6 +127,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>2.3.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>2.3.4</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -145,15 +149,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
                 <configuration>
-                    <archive>
-                        <manifestEntries>
-                            <Specification-Title>Concurrency Utilities for Java EE Reference Implementation</Specification-Title>
-                            <Specification-Version>${project.version}</Specification-Version>
-                            <Specification-Vendor>Oracle Corporation</Specification-Vendor>
-                            <Extension-Name>javax.enterprise.concurrent</Extension-Name>
-                            <Build-Id>${buildNumber}</Build-Id>
-                        </manifestEntries>
-                    </archive>
+                    <useDefaultManifestFile>true</useDefaultManifestFile>
                 </configuration>
             </plugin>
             <plugin>
@@ -183,6 +179,27 @@
                         <phase>validate</phase>
                         <goals>
                             <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <!-- By default, we don't export anything.
+                    -->
+                    <Export-Package></Export-Package>
+                    <instructions>
+                        <_include>-${basedir}/osgi.bundle</_include>
+                    </instructions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
                         </goals>
                     </execution>
                 </executions>
