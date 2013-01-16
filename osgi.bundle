@@ -38,5 +38,5 @@
   ~ holder.
   -->
 -exportcontents: \
-                        org.glassfish.concurrent.ri; \
-                        org.glassfish.concurrent.ri.spi; version=1.0
+                        org.glassfish.enterprise.concurrent; \
+                        org.glassfish.enterprise.concurrent.spi; version=1.0
