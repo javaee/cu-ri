@@ -89,7 +89,7 @@ public class ManagedExecutorServiceAdapterTest  {
         
         final String classloaderName = "testExcute" + new Date(System.currentTimeMillis());
         ClassloaderContextSetupProvider contextCallback = new ClassloaderContextSetupProvider(classloaderName);
-        RunnableImpl task = new RunnableImpl(null);
+        final RunnableImpl task = new RunnableImpl(null);
         ManagedExecutorService instance = 
                 createManagedExecutor("execute", contextCallback);
         instance.execute(task);
@@ -147,12 +147,17 @@ public class ManagedExecutorServiceAdapterTest  {
     }
     
     protected void verify_testSubmit_Runnable(ClassLoader originalClassLoader,
-            ClassloaderContextSetupProvider contextCallback) {
+            final ClassloaderContextSetupProvider contextCallback) {
         assertEquals(originalClassLoader, contextCallback.classloaderBeforeSetup);
         // reset() should be called at least once for the first task
         // reset() may or may not be called for the second task due to timing
         // issue when this check is performed.
-        assertTrue(contextCallback.numResetCalled > 1);   
+        assertTrue(Util.waitForBoolean(
+            new Util.BooleanValueProducer() {
+              public boolean getValue() {
+                return contextCallback.numResetCalled > 1;   
+              }
+            }, true, getLoggerName()));
     }
 
     /**
@@ -510,6 +515,7 @@ public class ManagedExecutorServiceAdapterTest  {
             Future<?> future = listenerForGoodTask.findFutureWithResult(result);
             listenerForGoodTask.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
             listenerForGoodTask.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null, classloaderName);
+            Util.waitForTaskDone(future, listenerForGoodTask, getLoggerName());
             listenerForGoodTask.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null);
             assertFalse(listenerForGoodTask.eventCalled(future, ManagedTaskListenerImpl.ABORTED));
             goodTask.verifyAfterRun(classloaderName, false); // verify context is setup for task
@@ -612,6 +618,7 @@ public class ManagedExecutorServiceAdapterTest  {
                 assertEquals(results.get(resultsIndex++), result);
                 taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
                 taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null, classloaderName);
+                Util.waitForTaskDone(future, taskListener, getLoggerName());
                 taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null);
                 assertFalse(taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED));
             }
@@ -717,6 +724,7 @@ public class ManagedExecutorServiceAdapterTest  {
                     assertEquals(results.get(resultsIndex), result);
                     taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
                     taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null, classloaderName);
+                    Util.waitForTaskDone(future, taskListener, getLoggerName());
                     taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null);
                 }
                 catch (ExecutionException ex) {
@@ -725,7 +733,8 @@ public class ManagedExecutorServiceAdapterTest  {
                     }
                     taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
                     taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null, classloaderName);
-                    taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, 
+                    Util.waitForTaskDone(future, taskListener, getLoggerName());
+                    taskListener.verifyCallback(ManagedTaskListenerImpl.DONE,
                             future, instance, new Exception(results.get(resultsIndex)));
                 }
                 assertFalse(taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED));

@@ -47,29 +47,55 @@ public class Util {
 
     private static final long MAX_WAIT_TIME = 10000L; // 10 seconds
 
-    public static boolean waitForTaskComplete(RunnableImpl task, String loggerName) {
-        long endWaitTime = System.currentTimeMillis() + MAX_WAIT_TIME;
-        while (!task.runCalled && endWaitTime > System.currentTimeMillis()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(loggerName).log(Level.SEVERE, null, ex);
-            }
-        }
-        return task.runCalled;
+    public static interface BooleanValueProducer {
+      public boolean getValue();
     }
 
-    public static boolean waitForTaskAborted(Future<?> future, ManagedTaskListenerImpl listener, String loggerName) {
-        long endWaitTime = System.currentTimeMillis() + MAX_WAIT_TIME;
-        while (!listener.eventCalled(future, listener.ABORTED) && endWaitTime > System.currentTimeMillis()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(loggerName).log(Level.SEVERE, null, ex);
-            }
-        }
-        return listener.eventCalled(future, listener.ABORTED);
+    public static boolean waitForBoolean(BooleanValueProducer valueProducer, boolean expectedValue, String loggerName) {
+      long endWaitTime = System.currentTimeMillis() + MAX_WAIT_TIME;
+      boolean value = valueProducer.getValue();
+      while ( (value != expectedValue) &&
+              endWaitTime > System.currentTimeMillis()) {
+          try {
+              Thread.sleep(100);
+          } catch (InterruptedException ex) {
+              Logger.getLogger(loggerName).log(Level.SEVERE, null, ex);
+          }
+        value = valueProducer.getValue();
+      }
+      return value;      
     }
+
+    public static boolean waitForTaskComplete(final RunnableImpl task, String loggerName) {
+      return waitForBoolean(
+          new BooleanValueProducer() {
+            public boolean getValue() {
+              return task.runCalled;
+            }
+          },
+          true,loggerName);
+    }
+
+    public static boolean waitForTaskAborted(final Future<?> future, final ManagedTaskListenerImpl listener, String loggerName) {
+      return waitForBoolean(
+          new BooleanValueProducer() {
+            public boolean getValue() {
+              return listener.eventCalled(future, listener.ABORTED);
+            }
+          },
+          true, loggerName);
+    }
+
+  public static boolean waitForTaskDone(final Future<?> future, final ManagedTaskListenerImpl listener, String loggerName) {
+    return waitForBoolean(
+        new BooleanValueProducer() {
+          public boolean getValue() {
+            return listener.eventCalled(future, listener.DONE);
+          }
+        },
+        true, loggerName);
+  }
+
 
     public static String generateName() {
         return new java.util.Date(System.currentTimeMillis()).toString();
