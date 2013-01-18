@@ -198,14 +198,18 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
 
         @Override
         public void run() {
+            ContextHandle handle = null;
             try {
                 if (contextHandleForSetup != null) {
-                    contextSetupProvider.setup(contextHandleForSetup);
+                    handle = contextSetupProvider.setup(contextHandleForSetup);
                 }
                 super.run();
             } catch (Throwable t) {
                 t.printStackTrace();
             } finally {
+                if (handle != null) {
+                    contextSetupProvider.reset(handle);
+                }
                 removeThread(this);
             }
         }

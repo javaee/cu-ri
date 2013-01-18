@@ -99,7 +99,7 @@ public class ContextServiceImpl implements ContextService {
     }
 
     @Override
-    public Object createContextualProxy(Object instance, Map<String, String> contextProperties, Class<?>... interfaces) {
+    public Object createContextualProxy(Object instance, Map<String, String> executionProperties, Class<?>... interfaces) {
         if (instance == null) {
             throw new IllegalArgumentException(NULL_INSTANCE); 
         }
@@ -112,8 +112,7 @@ public class ContextServiceImpl implements ContextService {
                 throw new IllegalArgumentException(CLASS_DOES_NOT_IMPLEMENT_INTERFACES);
             }  
         }
-        ContextProxyInvocationHandler handler = new ContextProxyInvocationHandler(this, instance);
-        handler.setExecutionProperties(contextProperties);
+        ContextProxyInvocationHandler handler = new ContextProxyInvocationHandler(this, instance, executionProperties);
         Object proxy = Proxy.newProxyInstance(instance.getClass().getClassLoader(), interfaces, handler);
         return proxy;
     }
@@ -124,15 +123,14 @@ public class ContextServiceImpl implements ContextService {
     }
     
     @Override
-    public <T> T createContextualProxy(T instance, Map<String, String> contextProperties, Class<T> intf) {
+    public <T> T createContextualProxy(T instance, Map<String, String> executionProperties, Class<T> intf) {
         if (instance == null) {
             throw new IllegalArgumentException(NULL_INSTANCE); 
         }
         if (intf == null) {
             throw new IllegalArgumentException(NO_INTERFACES);
         }
-        ContextProxyInvocationHandler handler = new ContextProxyInvocationHandler(this, instance);
-        handler.setExecutionProperties(contextProperties);
+        ContextProxyInvocationHandler handler = new ContextProxyInvocationHandler(this, instance, executionProperties);
         Object proxy = Proxy.newProxyInstance(instance.getClass().getClassLoader(), new Class[]{intf}, handler);
         return (T) proxy;
     }

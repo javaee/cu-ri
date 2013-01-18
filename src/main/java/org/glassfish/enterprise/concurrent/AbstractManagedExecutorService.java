@@ -53,10 +53,11 @@ import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
  * Abstract base class for {@code ManagedExecutorService} and 
  * {@code ManagedScheduledExecutorService}
  * implementation classes. Lifecycle operations are available for use by the
- * application server. Instances of this class should not be returned for use
- * by application components. Application components should be handed instances 
+ * application server. Application components should be handed instances 
  * that extends from  AbstractManagedExecutorServiceAdapter instead, which have 
  * their lifecycle operations disabled.
+ * Instances of subclasses of this class could be used by the Java EE
+ * product provider to control the life cycle.
  */
 public abstract class AbstractManagedExecutorService 
 extends AbstractExecutorService implements ManagedExecutorService {

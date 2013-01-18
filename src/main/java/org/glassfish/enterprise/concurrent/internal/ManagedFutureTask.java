@@ -46,6 +46,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import javax.enterprise.concurrent.AbortedException;
 import javax.enterprise.concurrent.ContextService;
 import javax.enterprise.concurrent.ManagedTask;
 import javax.enterprise.concurrent.ManagedTaskListener;
@@ -54,7 +55,9 @@ import org.glassfish.enterprise.concurrent.spi.ContextHandle;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 
 /**
- * Future implementation to be returned by ManagedExecutorSerivceImpl.
+ * Future implementation to be returned by methods in ManagedExecutorSerivceImpl.
+ * This class is responsible for saving and restoring thread context, as well
+ * as invoking ManagedTaskListener methods.
  */
 public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
 
@@ -67,6 +70,7 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
     protected Throwable taskRunThrowable;
     protected TaskDoneCallback taskDoneCallback;
     final boolean isContextualCallback;
+    IllegalStateException contextSetupException = null;
     
     public ManagedFutureTask(
             AbstractManagedExecutorService executor,
@@ -77,7 +81,7 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
         this.executor = executor;
         this.taskListener = getManagedTaskListener(task);
         this.isContextualCallback = isTaskContextualCallback(task) || executor.isContextualCallback();
-        initContextHandleForSetup(executor);
+        captureContext(executor);
     }
     
     public ManagedFutureTask(
@@ -88,7 +92,7 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
         this.executor = executor;
         this.taskListener = getManagedTaskListener(task);
         this.isContextualCallback = isTaskContextualCallback(task) || executor.isContextualCallback();
-        initContextHandleForSetup (executor);
+        captureContext (executor);
     }
 
     private ManagedTaskListener getManagedTaskListener(Object task) {
@@ -108,7 +112,7 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
         return false;
     }
 
-    protected final void initContextHandleForSetup(AbstractManagedExecutorService executor) {
+    protected final void captureContext(AbstractManagedExecutorService executor) {
         ContextSetupProvider contextSetupProvider = executor.getContextSetupProvider();
         ContextService contextService = executor.getContextService();
         if (contextService != null && contextSetupProvider != null) {
@@ -119,17 +123,42 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
     public void setupContext() {
         ContextSetupProvider contextSetupProvider = executor.getContextSetupProvider();
         if (contextSetupProvider != null) {
-            contextHandleForReset = contextSetupProvider.setup(contextHandleForSetup);
+            try {
+                contextHandleForReset = contextSetupProvider.setup(contextHandleForSetup);
+            } catch (IllegalStateException ex) {
+                // context handle not in valid state. Do not run the task.
+                contextSetupException = ex;
+            }
         }
     }
     
     public void resetContext() {
-        ContextSetupProvider contextSetupProvider = executor.getContextSetupProvider();
-        if (contextSetupProvider != null) {
-            contextSetupProvider.reset(contextHandleForReset);
+        if (contextSetupException == null) {
+            // only call reset() if setupContext() was called successfully
+            ContextSetupProvider contextSetupProvider = executor.getContextSetupProvider();
+            if (contextSetupProvider != null) {
+                contextSetupProvider.reset(contextHandleForReset);
+            }
         }
     }
-    
+ 
+    public void run() {
+        if (contextSetupException == null) {
+            super.run();
+        }
+        else {
+            // context handle not in valid state, throws AbortedException and
+            // do not run the task
+            AbortedException ex = new AbortedException(contextSetupException.getMessage());
+            setException(ex);
+            // notify listener. No need to set context here as it wouldn't work
+            // anyway
+            taskListener.taskAborted(this, 
+                        executor.getExecutorForTaskListener(), 
+                        ex);     
+        }
+    }
+
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         boolean result = super.cancel(mayInterruptIfRunning);

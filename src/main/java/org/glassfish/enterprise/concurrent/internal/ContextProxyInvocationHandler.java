@@ -57,21 +57,24 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
 
     final protected ContextSetupProvider contextSetupProvider;
     final protected ContextService contextService;
+    final protected ContextHandle capturedContextHandle;
     final protected TransactionSetupProvider transactionSetupProvider;
     final protected Object proxiedObject;
     protected Map<String, String> executionProperties;
 
-    public ContextProxyInvocationHandler(ContextServiceImpl contextService, Object proxiedObject) {
+    public ContextProxyInvocationHandler(ContextServiceImpl contextService, Object proxiedObject, 
+            Map<String, String> executionProperties) {
         this.contextSetupProvider = contextService.getContextSetupProvider();
         this.proxiedObject = proxiedObject;
         this.contextService = contextService;
         this.transactionSetupProvider = contextService.getTransactionSetupProvider();
-        this.executionProperties = null;
+        this.executionProperties = executionProperties;
+        this.capturedContextHandle = 
+                contextSetupProvider.saveContext(contextService, executionProperties);
     }
     
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // TODO supports USE_PARENT_TRANSACTION property
         Object result = null;
         Class methodDeclaringClass = method.getDeclaringClass();
         
@@ -84,9 +87,7 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
         }
         else {
             // for all other methods, invoke under creator's context
-            ContextHandle contextHandleForSetup =
-                    contextSetupProvider.saveContext(contextService, contextService.getExecutionProperties(proxy));
-            ContextHandle contextHandleForReset = contextSetupProvider.setup(contextHandleForSetup);
+            ContextHandle contextHandleForReset = contextSetupProvider.setup(capturedContextHandle);
             // Ask TransactionSetupProvider to perform any transaction related
             // setup before running the proxy. For example, suspend current
             // transaction on current thread unless USE_PARENT_TRANSACTION property is set
@@ -115,10 +116,6 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
         Map<String, String> copy = new HashMap<>();
         copy.putAll(executionProperties);
         return copy;
-    }
-
-    public void setExecutionProperties(Map<String, String> executionProperties) {
-        this.executionProperties = executionProperties;
     }
 
     public ContextService getContextService() {

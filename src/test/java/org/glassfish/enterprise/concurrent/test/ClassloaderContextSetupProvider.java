@@ -50,9 +50,14 @@ public class ClassloaderContextSetupProvider implements ContextSetupProvider {
     public ClassLoader classloaderBeforeSetup; // for test verification
     public volatile int numResetCalled = 0;
     public volatile Map<String, String> contextServiceProperties; // for test verification
+    public String throwsOnSetupMessage = null;
 
     public ClassloaderContextSetupProvider(String classloaderName) {
         this.classloaderName = classloaderName;
+    }
+    
+    public void throwsOnSetup(String msg) {
+        throwsOnSetupMessage = msg;
     }
     
     @Override
@@ -64,6 +69,9 @@ public class ClassloaderContextSetupProvider implements ContextSetupProvider {
 
     @Override
     public ContextHandle setup(ContextHandle contextHandle) {
+        if (throwsOnSetupMessage != null) {
+            throw new IllegalStateException(throwsOnSetupMessage);
+        }
         classloaderBeforeSetup = Thread.currentThread().getContextClassLoader();
         
         SavedContext savedContext = (SavedContext)contextHandle;

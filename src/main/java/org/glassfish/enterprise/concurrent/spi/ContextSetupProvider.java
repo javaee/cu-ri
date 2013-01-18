@@ -88,8 +88,12 @@ public interface ContextSetupProvider extends Serializable {
      * 
      * @return A ContextHandle that will be passed to the reset method
      * in the thread executing the task
+     * 
+     * @throws IllegalStateException if the ContextHandle is no longer valid.
+     * For example, the application component that the ContextHandle was 
+     * created for is no longer running or is undeployed.
      */
-    public ContextHandle setup(ContextHandle contextHandle);
+    public ContextHandle setup(ContextHandle contextHandle) throws IllegalStateException;
     
     /**
      * Called by ManagedExecutorService after executing a task to clean up and

@@ -53,10 +53,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.enterprise.concurrent.AbortedException;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RejectPolicy;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RunLocation;
-import org.glassfish.enterprise.concurrent.internal.ManagedFutureTask;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.BlockingRunnableImpl;
 import org.glassfish.enterprise.concurrent.test.CallableImpl;
@@ -169,12 +169,12 @@ public class ManagedExecutorServiceAdapterTest  {
     public void testSubmit_Runnable_withListener() {
         debug("submit_Runnable_withListener");
         
-        final String classloaderName = "testSubmit" + new Date(System.currentTimeMillis());
+        final String classloaderName = "submit_Runnable_withListener" + new Date(System.currentTimeMillis());
         ClassloaderContextSetupProvider contextCallback = new ClassloaderContextSetupProvider(classloaderName);
         ManagedTaskListenerImpl taskListener = new ManagedTaskListenerImpl();
         RunnableImpl task = new ManagedRunnableTask(taskListener);
         ManagedExecutorService instance = 
-                createManagedExecutor("submit", contextCallback);
+                createManagedExecutor("submit_Runnable_withListener", contextCallback);
         Future future = instance.submit(task);
         try {
             assertNull(future.get());
@@ -204,6 +204,40 @@ public class ManagedExecutorServiceAdapterTest  {
         assertTrue(taskListener.eventCalled(future, ManagedTaskListenerImpl.DONE));
     }    
 
+    /**
+     * Test submit(Runnable) but context setup fails, which could happen if
+     * the application component submitting the task is no longer running.
+     */
+    @Test
+    public void testSubmit_Runnable_withListener_invalidContext() {
+        debug("submit_Runnable_withListener_invalidContext");
+        
+        final String classloaderName = "submit_runnable_withListener_invalidContext" + new Date(System.currentTimeMillis());
+        ClassloaderContextSetupProvider contextCallback = new ClassloaderContextSetupProvider(classloaderName);
+        final String MESSAGE = "Invalid Context";
+        contextCallback.throwsOnSetup(MESSAGE);
+        
+        ManagedTaskListenerImpl taskListener = new ManagedTaskListenerImpl();
+        RunnableImpl task = new ManagedRunnableTask(taskListener);
+        ManagedExecutorService instance = 
+                createManagedExecutor("submit", contextCallback);
+        Future future = instance.submit(task);
+        try {
+            assertNull(future.get());
+            fail("Expected Exception not thrown");
+        } catch (ExecutionException ex) {
+            assertTrue(ex.getCause() instanceof AbortedException);
+            assertEquals(MESSAGE, ex.getCause().getMessage());
+        } catch (InterruptedException ex) {
+        }
+        assertTrue(future.isDone());
+        assertFalse(future.isCancelled());
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.STARTING);
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.DONE);
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.SUBMITTED);
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED);
+    }
+    
     /**
      * Test of submit method, of class ManagedExecutorServiceImpl.
      * Verify context callback are called to setup context
@@ -416,6 +450,41 @@ public class ManagedExecutorServiceAdapterTest  {
         taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
 
         debug("submit_Callable_exception_withListener done");
+    }
+
+        /**
+     * Test submit(Callable) but context setup fails, which could happen if
+     * the application component submitting the task is no longer running.
+     */
+    @Test
+    public void testSubmit_Callable_withListener_invalidContext() {
+        debug("submit_Runnable_withListener_invalidContext");
+        
+        final String classloaderName = "submit_runnable_withListener_invalidContext" + new Date(System.currentTimeMillis());
+        ClassloaderContextSetupProvider contextCallback = new ClassloaderContextSetupProvider(classloaderName);
+        final String MESSAGE = "Invalid Context";
+        contextCallback.throwsOnSetup(MESSAGE);
+        
+        ManagedTaskListenerImpl taskListener = new ManagedTaskListenerImpl();
+        final String result = "result" + new Date(System.currentTimeMillis());
+       CallableImpl<String> task = new ManagedCallableTask<>(result, taskListener);
+        ManagedExecutorService instance = 
+                createManagedExecutor("submit", contextCallback);
+        Future future = instance.submit(task);
+        try {
+            assertNull(future.get());
+            fail("Expected Exception not thrown");
+        } catch (ExecutionException ex) {
+            assertTrue(ex.getCause() instanceof AbortedException);
+            assertEquals(MESSAGE, ex.getCause().getMessage());
+        } catch (InterruptedException ex) {
+        }
+        assertTrue(future.isDone());
+        assertFalse(future.isCancelled());
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.STARTING);
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.DONE);
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.SUBMITTED);
+        taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED);
     }
 
     /**
