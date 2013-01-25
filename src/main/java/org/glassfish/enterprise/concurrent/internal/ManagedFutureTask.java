@@ -279,10 +279,4 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
         return task.toString();
     }
     
-    public String getTaskIdentityDescription(Locale locale) {
-        if (task instanceof ManagedTask) {
-          return ((ManagedTask)task).getIdentityDescription(locale);
-        }
-        return task.toString();
-    }
 }

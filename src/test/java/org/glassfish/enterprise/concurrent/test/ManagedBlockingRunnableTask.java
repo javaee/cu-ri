@@ -52,11 +52,6 @@ public class ManagedBlockingRunnableTask extends BlockingRunnableImpl implements
     }
 
     @Override
-    public String getIdentityDescription(Locale locale) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public ManagedTaskListener getManagedTaskListener() {
         return taskListener;
     }

@@ -56,11 +56,6 @@ public class ManagedCallableTask<V> extends CallableImpl<V> implements ManagedTa
     }
 
     @Override
-    public String getIdentityDescription(Locale locale) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public ManagedTaskListener getManagedTaskListener() {
         return taskListener;
     }

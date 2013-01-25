@@ -52,11 +52,6 @@ public class ManagedTimeRecordingRunnableTask extends TimeRecordingRunnableImpl 
     }
 
     @Override
-    public String getIdentityDescription(Locale locale) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    @Override
     public ManagedTaskListener getManagedTaskListener() {
         return taskListener;
     }

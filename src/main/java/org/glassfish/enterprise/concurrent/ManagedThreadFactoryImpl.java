@@ -243,13 +243,6 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
             return "null";
         }
         
-        String getTaskIdentityDescription() {
-            if (task != null) {
-                return task.getTaskIdentityDescription(Locale.getDefault());
-            }
-            return "null";
-        }
-
         /**
          * Marks the thread for shutdown so application components could 
          * check the status of this thread and finish any work as soon
