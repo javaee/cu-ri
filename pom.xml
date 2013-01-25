@@ -51,7 +51,7 @@
 
     <groupId>org.glassfish</groupId>
     <artifactId>javax.enterprise.concurrent</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0-b01-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>org.glassfish.javax.enterprise.concurrent</name>
     <description>Reference Implementation for JSR 236 - Concurrency Utilities for Java EE</description>
@@ -73,6 +73,7 @@
     <scm>
         <url>http://java.net/projects/cu-javaee/sources/source-code-repository/show</url>
         <connection>scm:svn:https://svn.java.net/svn/cu-javaee~source-code-repository/trunk</connection>
+        <developerConnection>scm:svn:https://svn.java.net/svn/cu-javaee~source-code-repository/trunk</developerConnection>
     </scm>
 
     <developers>
@@ -95,6 +96,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <javax.enterprise.concurrent-api.version>1.0-b01</javax.enterprise.concurrent-api.version>
+
     </properties>
 
 
@@ -116,7 +119,7 @@
         <dependency>
             <groupId>javax.enterprise.concurrent</groupId>
             <artifactId>javax.enterprise.concurrent-api</artifactId>
-            <version>${project.version}</version>
+            <version>${javax.enterprise.concurrent-api.version}</version>
         </dependency>
     </dependencies>
 
