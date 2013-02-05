@@ -42,7 +42,7 @@ package org.glassfish.enterprise.concurrent;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.enterprise.concurrent.ManageableThread;
@@ -62,10 +62,18 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
 
     private String name;
     final private ContextSetupProvider contextSetupProvider;
-    private ContextHandle contextHandleForSetup;
+    // A non-null ContextService should be provided if thread context should
+    // be setup before running the Runnable passed in through the newThread
+    // method.
+    // Context service could be null if the ManagedThreadFactoryImpl is
+    // used for creating threads for ManagedExecutorService, where it is
+    // not necessary to set up thread context at thread creation time. In that
+    // case, thread context is set up before running each task.
+    final private ContextServiceImpl contextService;
     private int priority;
     private long hungTaskThreshold = 0L; // in milliseconds
     private boolean longRunningTasks;
+    private AtomicInteger threadIdSequence = new AtomicInteger();
 
 
     public ManagedThreadFactoryImpl(String name) {
@@ -81,22 +89,16 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
                                     int priority,
                                     boolean longRunningTasks) {
         this.name = name;
+        this.contextService = contextService;
         this.contextSetupProvider = contextService != null? contextService.getContextSetupProvider(): null;
-        if (contextSetupProvider != null) {
-            contextHandleForSetup = contextSetupProvider.saveContext(contextService);
-        }
         this.priority = priority;
         this.longRunningTasks = longRunningTasks;
-        threads = new ArrayList<ManagedThread>();
+        threads = new ArrayList<>();
         lock = new ReentrantLock();
     }
 
     public String getName() {
         return name;
-    }
-
-    public ContextHandle getContextHandleForSetup() {
-        return contextHandleForSetup;
     }
 
     public long getHungTaskThreshold() {
@@ -115,7 +117,11 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
                 // do not create new thread if stopped
                 return null;
             }
-            ManagedThread newThread = new ManagedThread(r);
+            ContextHandle contextHandleForSetup = null;
+            if (contextSetupProvider != null) {
+                contextHandleForSetup = contextSetupProvider.saveContext(contextService);
+            }
+            ManagedThread newThread = createThread(r, contextHandleForSetup);
             newThread.setPriority(priority);
             if (longRunningTasks) {
                 newThread.setDaemon(true);
@@ -128,7 +134,11 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         }
     }
 
-    void removeThread(ManagedThread t) {
+    protected ManagedThread createThread(Runnable r, ContextHandle contextHandleForSetup) {
+        return new ManagedThread(r, contextHandleForSetup);
+    }
+    
+    protected void removeThread(ManagedThread t) {
         lock.lock();
         try {
             threads.remove(t);
@@ -186,14 +196,17 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
     /**
      * ManageableThread to be returned by {@code ManagedThreadFactory.newThread()}
      */
-    class ManagedThread extends Thread implements ManageableThread {
+    public class ManagedThread extends Thread implements ManageableThread {
 
         volatile long taskStartTime = 0L;
         volatile ManagedFutureTask task = null;
         volatile boolean shutdown = false;
-
-        public ManagedThread(Runnable target) {
+        final ContextHandle contextHandleForSetup;
+        
+        public ManagedThread(Runnable target, ContextHandle contextHandleForSetup) {
             super(target);
+            setName(name + "-Thread-" + threadIdSequence.incrementAndGet());
+            this.contextHandleForSetup = contextHandleForSetup;
         }
 
         @Override
