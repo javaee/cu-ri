@@ -39,6 +39,8 @@
  */
 package org.glassfish.enterprise.concurrent;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -134,8 +136,18 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         }
     }
 
-    protected ManagedThread createThread(Runnable r, ContextHandle contextHandleForSetup) {
-        return new ManagedThread(r, contextHandleForSetup);
+    protected ManagedThread createThread(final Runnable r, final ContextHandle contextHandleForSetup) {
+        if (System.getSecurityManager() == null) {
+            return new ManagedThread(r, contextHandleForSetup);
+        } else {
+            return (ManagedThread) AccessController.doPrivileged(
+              new PrivilegedAction() {
+                @Override
+                public Object run() {
+                    return new ManagedThread(r, contextHandleForSetup);
+                }
+              });
+        }
     }
     
     protected void removeThread(ManagedThread t) {
