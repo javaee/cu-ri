@@ -44,6 +44,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import javax.enterprise.concurrent.ContextService;
+import javax.enterprise.concurrent.ManagedTask;
 import org.glassfish.enterprise.concurrent.ContextServiceImpl;
 import org.glassfish.enterprise.concurrent.spi.ContextHandle;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
@@ -90,10 +91,11 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
             ContextHandle contextHandleForReset = contextSetupProvider.setup(capturedContextHandle);
             // Ask TransactionSetupProvider to perform any transaction related
             // setup before running the proxy. For example, suspend current
-            // transaction on current thread unless USE_PARENT_TRANSACTION property is set
+            // transaction on current thread unless TRANSACTION property is set
+            // to USE_TRANSACTION_OF_EXECUTION_THREAD
             TransactionHandle txHandle = null;
             if (transactionSetupProvider != null) {
-              txHandle = transactionSetupProvider.beforeProxyMethod(isUseTransactionPropertySet());
+              txHandle = transactionSetupProvider.beforeProxyMethod(useExecutionThreadTransaction());
             }
             try {
                 result = method.invoke(proxiedObject, args);
@@ -101,7 +103,7 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
             finally {
                 contextSetupProvider.reset(contextHandleForReset);
                 if (transactionSetupProvider != null) {
-                    transactionSetupProvider.afterProxyMethod(txHandle, isUseTransactionPropertySet());
+                    transactionSetupProvider.afterProxyMethod(txHandle, useExecutionThreadTransaction());
                 }
             }
         }
@@ -122,8 +124,8 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
         return contextService;
     }
     
-    protected boolean isUseTransactionPropertySet() {
-      if (executionProperties != null && "true".equalsIgnoreCase(executionProperties.get(ContextService.USE_PARENT_TRANSACTION))) {
+    protected boolean useExecutionThreadTransaction() {
+      if (executionProperties != null && "USE_TRANSACTION_OF_EXECUTION_THREAD".equalsIgnoreCase(executionProperties.get(ManagedTask.TRANSACTION))) {
           return true;
       }
       return false;

@@ -58,26 +58,26 @@ public class ManagedTaskListenerImpl implements ManagedTaskListener {
             abortedFuture = null, doneFuture = null;
         
     @Override
-    public void taskSubmitted(Future<?> future, ManagedExecutorService executor) {
-        update(SUBMITTED, future, executor, null);
+    public void taskSubmitted(Future<?> future, ManagedExecutorService executor, Object task) {
+        storeEvent(SUBMITTED, future, executor, task, null);
         submittedFuture = future;
     }
 
     @Override
-    public void taskAborted(Future<?> future, ManagedExecutorService executor, Throwable exception) {
-        update(ABORTED, future, executor, exception);
+    public void taskAborted(Future<?> future, ManagedExecutorService executor, Object task, Throwable exception) {
+        storeEvent(ABORTED, future, executor, task, exception);
         abortedFuture = future;
     }
 
     @Override
-    public void taskDone(Future<?> future, ManagedExecutorService executor, Throwable exception) {
-        update(DONE, future, executor, exception);
+    public void taskDone(Future<?> future, ManagedExecutorService executor, Object task, Throwable exception) {
+        storeEvent(DONE, future, executor, task, exception);
         doneFuture = future;
     }
 
     @Override
-    public void taskStarting(Future<?> future, ManagedExecutorService executor) {
-        update(STARTING, future, executor, null);
+    public void taskStarting(Future<?> future, ManagedExecutorService executor, Object task) {
+        storeEvent(STARTING, future, executor, task, null);
         startingFuture = future;
     }
     
@@ -89,13 +89,14 @@ public class ManagedTaskListenerImpl implements ManagedTaskListener {
         return false;
     }
     
-    private void update (String event,
+    private void storeEvent (String event,
             Future<?> future,
             ManagedExecutorService executor,
+            Object task,
             Throwable exception) {
         HashMap<String, CallbackParameters> map = callParameters.get(future);
         if (map == null) {
-            map = new HashMap<String, CallbackParameters>();
+            map = new HashMap<>();
             callParameters.put(future, map);
         }
         CallbackParameters params = map.get(event);
@@ -103,7 +104,7 @@ public class ManagedTaskListenerImpl implements ManagedTaskListener {
             params.incrementCount();
         }
         else {
-            params = new CallbackParameters(executor, exception);
+            params = new CallbackParameters(executor, task, exception);
             map.put(event, params);
         }
     }
@@ -147,15 +148,26 @@ public class ManagedTaskListenerImpl implements ManagedTaskListener {
         return null;
     }
 
-    public void verifyCallback(String event, Future<?> future, ManagedExecutorService executor, Throwable exception) {
-        verifyCallback(event, future, executor, exception, null);
+    public void verifyCallback(String event, 
+            Future<?> future, 
+            ManagedExecutorService executor, 
+            Object task, 
+            Throwable exception) {
+        verifyCallback(event, future, executor, task, exception, null);
     }
     
-    public void verifyCallback(String event, Future<?> future, ManagedExecutorService executor, Throwable exception, 
+    public void verifyCallback(String event, 
+            Future<?> future, 
+            ManagedExecutorService executor, 
+            Object task,
+            Throwable exception, 
             String classloaderName) {
         CallbackParameters result = find(future, event);
         assertNotNull("Callback: '" + event + "' not called", result);
         assertEquals(executor, result.getExecutor());
+        if (task != null) {
+            assertTrue(task == result.getTask());
+        }
         if (exception == null) {
             assertNull(result.getException());
         }
@@ -175,10 +187,12 @@ public class ManagedTaskListenerImpl implements ManagedTaskListener {
         private ManagedExecutorService executor;
         private Throwable exception;
         private ClassLoader classLoader;
+        private Object task;
         private int count;
 
-        public CallbackParameters(ManagedExecutorService executor, Throwable exception) {
+        public CallbackParameters(ManagedExecutorService executor, Object task, Throwable exception) {
             this.executor = executor;
+            this.task = task;
             this.exception = exception;
             this.classLoader = Thread.currentThread().getContextClassLoader();
             this.count = 1;
@@ -198,6 +212,10 @@ public class ManagedTaskListenerImpl implements ManagedTaskListener {
 
         public void incrementCount() {
             this.count++;
+        }
+
+        public Object getTask() {
+            return task;
         }
 
         public Throwable getException() {

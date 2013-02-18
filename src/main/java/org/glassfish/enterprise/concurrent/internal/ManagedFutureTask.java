@@ -40,7 +40,6 @@
 
 package org.glassfish.enterprise.concurrent.internal;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -103,12 +102,7 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
     }
 
     private boolean isTaskContextualCallback(Object task) {
-        if (task instanceof ManagedTask) {
-             Map<String, String> executionProperties = ((ManagedTask) task).getExecutionProperties();
-             if (executionProperties != null && "true".equalsIgnoreCase(executionProperties.get(ManagedTask.CONTEXTUAL_CALLBACK_HINT))) {
-                 return true;
-             }
-        }
+        // Contextual callback no longer specified through execution properties
         return false;
     }
 
@@ -154,7 +148,8 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
             // notify listener. No need to set context here as it wouldn't work
             // anyway
             taskListener.taskAborted(this, 
-                        executor.getExecutorForTaskListener(), 
+                        executor.getExecutorForTaskListener(),
+                        task,
                         ex);     
         }
     }
@@ -168,7 +163,8 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
                     setupContext();
                 }
                 taskListener.taskAborted(this, 
-                        executor.getExecutorForTaskListener(), 
+                        executor.getExecutorForTaskListener(),
+                        task,
                         new CancellationException());
             }
             finally {
@@ -187,7 +183,8 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
                     setupContext();
                 }
                 taskListener.taskSubmitted(this,  
-                        executor.getExecutorForTaskListener());
+                        executor.getExecutorForTaskListener(),
+                        task);
             }
             finally {
                 if (isContextualCallback) {
@@ -210,7 +207,8 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
                     setupContext();
                 }
                 taskListener.taskDone(this, 
-                        executor.getExecutorForTaskListener(), 
+                        executor.getExecutorForTaskListener(),
+                        task,
                         new CancellationException());
             }
             finally {
@@ -234,7 +232,8 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
         
         if (taskListener != null) {
             taskListener.taskStarting(this, 
-                    executor.getExecutorForTaskListener());
+                    executor.getExecutorForTaskListener(),
+                    task);
         }
     }
     
@@ -256,7 +255,8 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
         
         if (taskListener != null) {
             taskListener.taskDone(this, 
-                    executor.getExecutorForTaskListener(), 
+                    executor.getExecutorForTaskListener(),
+                    task,
                     t != null? t: taskRunThrowable);
         }
     }

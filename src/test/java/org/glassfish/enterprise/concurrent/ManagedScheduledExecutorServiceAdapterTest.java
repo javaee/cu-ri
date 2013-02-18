@@ -133,8 +133,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());        
         task.verifyAfterRun(classloaderName); // verify context is setup for task
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
     }
 
     /**
@@ -168,8 +168,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         assertNotNull(exception);
         assertEquals(result, exception.getCause().getMessage());
         task.verifyAfterRun(classloaderName); // verify context is setup for task
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
     }
 
 
@@ -253,8 +253,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());        
         task.verifyAfterRun(classloaderName); // verify context is setup for task
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
     }
 
     /**
@@ -287,8 +287,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         assertNotNull(exception);
         assertEquals(result, exception.getCause());
         task.verifyAfterRun(classloaderName); // verify context is setup for task
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
     }
 
     /**
@@ -407,8 +407,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         assertTrue(taskListener.getCount(future, ManagedTaskListenerImpl.STARTING) >= 2);
         assertTrue(taskListener.getCount(future, ManagedTaskListenerImpl.DONE) >= 2);
         
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
     }
     
     @Test
@@ -500,8 +500,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         assertTrue(taskListener.getCount(future, ManagedTaskListenerImpl.STARTING) >= 2);
         assertTrue(taskListener.getCount(future, ManagedTaskListenerImpl.DONE) >= 2);
         
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
     }
    
     /**
@@ -546,9 +546,9 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         for (Long timeout: timeouts) {
             System.out.println("timeout: " + new Date(timeout).toString());
         }
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, task, null, classloaderName);
         assertFalse(taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED));
    }
 
@@ -599,9 +599,9 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         for (Long timeout: timeouts) {
             System.out.println("timeout: " + new Date(timeout).toString());
         }
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, task, null, classloaderName);
         assertFalse(taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED));
     }
    
@@ -646,9 +646,9 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         for (Long timeout: timeouts) {
             System.out.println("timeout: " + new Date(timeout).toString());
         }
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, task, null, classloaderName);
         assertFalse(taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED));
     }
    
@@ -700,9 +700,9 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         for (Long timeout: timeouts) {
             System.out.println("timeout: " + new Date(timeout).toString());
         }
-        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, null);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, null, classloaderName);
-        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, task, null);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, task, null, classloaderName);
+        taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, task, null, classloaderName);
         assertFalse(taskListener.eventCalled(future, ManagedTaskListenerImpl.ABORTED));
     }
    
@@ -726,7 +726,7 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
 
         assertTrue("timeout waiting for taskAborted call", Util.waitForTaskAborted(future, taskListener, getLoggerName()));
         taskListener.verifyCallback(ManagedTaskListenerImpl.ABORTED, future, instance, 
-                new CancellationException(), classloaderName);
+                task, new CancellationException(), classloaderName);
     }
 
 

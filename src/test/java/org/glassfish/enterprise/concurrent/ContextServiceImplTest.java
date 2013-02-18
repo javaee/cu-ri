@@ -43,7 +43,6 @@ package org.glassfish.enterprise.concurrent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import javax.enterprise.concurrent.ContextService;
 import org.glassfish.enterprise.concurrent.test.ClassloaderContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.DummyTransactionSetupProvider;
 import org.glassfish.enterprise.concurrent.test.ManagedTaskListenerImpl;
@@ -134,7 +133,7 @@ public class ContextServiceImplTest {
         ClassloaderContextSetupProvider contextSetupProvider = new ClassloaderContextSetupProvider(classloaderName);
         DummyTransactionSetupProvider txSetupProvider = new DummyTransactionSetupProvider();
         Map<String, String> props = new HashMap<>();
-        props.put(ContextService.USE_PARENT_TRANSACTION, "true");
+        props.put("custom", "true");
         ComparableRunnableImpl task = new ComparableRunnableImpl(null);
         ContextServiceImpl contextService = 
                 new ContextServiceImpl("myContextService", contextSetupProvider, txSetupProvider);
@@ -145,9 +144,9 @@ public class ContextServiceImplTest {
         proxy.run();
 
         task.verifyAfterRun(classloaderName);
-        assertEquals("true", contextSetupProvider.contextServiceProperties.get(ContextService.USE_PARENT_TRANSACTION));
+        assertEquals("true", contextSetupProvider.contextServiceProperties.get("custom"));
 
-        verifyTransactionSetupProvider(txSetupProvider, true);
+        verifyTransactionSetupProvider(txSetupProvider, false);
         // did we revert the classloader back to the original one?
         assertEquals(original, Thread.currentThread().getContextClassLoader());
     }
@@ -157,7 +156,7 @@ public class ContextServiceImplTest {
         final String classloaderName = "testCreateContextualProxy_withProperties";
         ClassloaderContextSetupProvider contextSetupProvider = new ClassloaderContextSetupProvider(classloaderName);
         Map<String, String> props = new HashMap<>();
-        props.put(ContextService.USE_PARENT_TRANSACTION, "false");
+        props.put("custom", "false");
         RunnableImpl task = new RunnableImpl(null);
         ContextServiceImpl contextService = new ContextServiceImpl("myContextService", contextSetupProvider);
         Runnable proxy = contextService.createContextualProxy(task, props, Runnable.class);
@@ -167,7 +166,7 @@ public class ContextServiceImplTest {
         proxy.run();
 
         task.verifyAfterRun(classloaderName);
-        assertEquals("false", contextSetupProvider.contextServiceProperties.get(ContextService.USE_PARENT_TRANSACTION));
+        assertEquals("false", contextSetupProvider.contextServiceProperties.get("custom"));
 
         // did we revert the classloader back to the original one?
         assertEquals(original, Thread.currentThread().getContextClassLoader());
@@ -193,7 +192,7 @@ public class ContextServiceImplTest {
         final String classloaderName = "testCreateContextualProxy_withProperties_wrongInterface";
         ClassloaderContextSetupProvider contextSetupProvider = new ClassloaderContextSetupProvider(classloaderName);
         Map<String, String> props = new HashMap<>();
-        props.put(ContextService.USE_PARENT_TRANSACTION, "false");
+        props.put("custom", "false");
         RunnableImpl task = new RunnableImpl(null);
         ContextServiceImpl contextService = new ContextServiceImpl("myContextService", contextSetupProvider);
         try {
