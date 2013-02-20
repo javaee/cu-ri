@@ -44,6 +44,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.enterprise.concurrent.ManagedExecutorService;
@@ -66,22 +67,53 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
             long hungTaskThreshold,
             boolean longRunningTasks,
             int corePoolSize, int maxPoolSize, int keepAliveTime, 
-            TimeUnit keepAliveTimeUnit, int queueCapacity,
+            TimeUnit keepAliveTimeUnit,
             ContextServiceImpl contextService,
             RejectPolicy rejectPolicy,
-            RunLocation runLocation,
-            boolean contextualCallback) {
+            BlockingQueue<Runnable> queue) {
         super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks,
                 contextService,
                 contextService != null? contextService.getContextSetupProvider(): null,
-                rejectPolicy,
-                runLocation,
-                contextualCallback);
+                rejectPolicy);
+        threadPoolExecutor = new ManagedThreadPoolExecutor(corePoolSize, maxPoolSize, 
+                keepAliveTime, keepAliveTimeUnit, queue, 
+                this.managedThreadFactory);
+        adapter = new ManagedExecutorServiceAdapter(this);
+    }
+    
+    public ManagedExecutorServiceImpl(String name,
+            ManagedThreadFactoryImpl managedThreadFactory,
+            long hungTaskThreshold,
+            boolean longRunningTasks,
+            int corePoolSize, int maxPoolSize, int keepAliveTime, 
+            TimeUnit keepAliveTimeUnit, int queueCapacity,
+            ContextServiceImpl contextService,
+            RejectPolicy rejectPolicy) {
+        super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks,
+                contextService,
+                contextService != null? contextService.getContextSetupProvider(): null,
+                rejectPolicy);
 
+        // Create a queue for ManagedThreadPoolExecutor based on the values
+        // of corePoolSize and queueCapacity.
+        // If queueCapacity is 0, or
+        // queueCapacity is Integer.MAX_VALUE and corePoolSize is 0,
+        // direct handoff queuing strategy will be used and a
+        // SynchronousQueue will be created.
+        // If queueCapacity is Integer.MAX_VALUE but corePoolSize is not 0,
+        // an unbounded queue will be used.
+        // For any other valid value for queueCapacity, a bounded queue
+        // wil be created.
         BlockingQueue<Runnable> queue;
-        if (queueCapacity <= 0) {
-            // unbounded queue
-            queue = new LinkedBlockingQueue<>();
+        if (queueCapacity == Integer.MAX_VALUE) {
+            if (corePoolSize == 0) {
+                queue = new SynchronousQueue<>();
+            }
+            else {
+                queue = new LinkedBlockingQueue<>();
+            }
+        } else if (queueCapacity == 0) {
+            queue = new SynchronousQueue<>();
         } else {
             queue = new ArrayBlockingQueue<>(queueCapacity); 
         }

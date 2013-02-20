@@ -66,15 +66,11 @@ public class ManagedScheduledExecutorServiceImpl extends AbstractManagedExecutor
             TimeUnit keepAliveTimeUnit, 
             int queueCapacity, 
             ContextServiceImpl contextService,
-            RejectPolicy rejectPolicy,
-            RunLocation runLocation,
-            boolean contextualCallback) {
+            RejectPolicy rejectPolicy) {
         super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks,
                 contextService,
                 contextService != null? contextService.getContextSetupProvider(): null,
-                rejectPolicy,
-                runLocation,
-                contextualCallback);
+                rejectPolicy);
 
         threadPoolExecutor = new ManagedScheduledThreadPoolExecutor(corePoolSize, 
                 this.managedThreadFactory);

@@ -41,14 +41,15 @@
 package org.glassfish.enterprise.concurrent;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RejectPolicy;
-import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RunLocation;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.BlockingRunnableImpl;
 import org.glassfish.enterprise.concurrent.test.RunnableImpl;
@@ -141,14 +142,74 @@ public class ManagedExecutorServiceImplTest {
         assertTrue(mes.isTerminated());
     }
     
+    @Test
+    public void testQueueCreation() throws Exception {
+        // Case 1: corePoolSize of 0, queue size of Integer.MAX_VALUE
+        //         A SynchronousQueue should be created
+        ManagedExecutorServiceImpl mes1 = createManagedExecutor("mes1", 0, 1, Integer.MAX_VALUE);
+        BlockingQueue<Runnable> queue = getQueue(mes1);
+        assertTrue(queue instanceof SynchronousQueue);
+        assertEquals(0, queue.remainingCapacity());
+        
+        // Case 2: corePoolSize of non-zero, queue size of Integer.MAX_VALUE
+        //         An unbounded queue should be created
+        ManagedExecutorServiceImpl mes2 = createManagedExecutor("mes2", 1, 1, Integer.MAX_VALUE);
+        queue = getQueue(mes2);
+        assertEquals(Integer.MAX_VALUE, queue.remainingCapacity());
+        
+        // Case 3: queue size of 0, A SynchronousQueue should be created 
+        ManagedExecutorServiceImpl mes3 = createManagedExecutor("mes3", 0, 1, 0);
+        queue = getQueue(mes3);
+        assertTrue(queue instanceof SynchronousQueue);
+        assertEquals(0, queue.remainingCapacity());
+        
+        // Case 4: queue size not 0 or Integer.MAX_VALUE, 
+        //         A queue with specified capacity should be created
+        final int QUEUE_SIZE = 1234;
+        ManagedExecutorServiceImpl mes4 = createManagedExecutor("mes4", 0, 1, QUEUE_SIZE);
+        queue = getQueue(mes4);
+        assertEquals(QUEUE_SIZE, queue.remainingCapacity());
+        
+        ManagedExecutorServiceImpl mes5 = createManagedExecutor("mes5", 1, 10, QUEUE_SIZE);
+        queue = getQueue(mes5);
+        assertEquals(QUEUE_SIZE, queue.remainingCapacity());        
+    }
+    
+    @Test
+    public void testConstructorWithGivenQueue() {
+        final int QUEUE_SIZE = 8765;
+        BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(QUEUE_SIZE);
+        ManagedExecutorServiceImpl mes = 
+                new ManagedExecutorServiceImpl("mes", null, 0, false,
+                1, 10, 0, TimeUnit.SECONDS, 
+                new TestContextService(null), RejectPolicy.ABORT,
+                queue);
+        assertEquals(queue, getQueue(mes));
+        assertEquals(QUEUE_SIZE, getQueue(mes).remainingCapacity());
+    }
+    
     protected ManagedExecutorService createManagedExecutor(String name, 
             ContextSetupProvider contextCallback) {
         return new ManagedExecutorServiceImpl(name, null, 0, false,
                 1, 1,  
                 0, TimeUnit.SECONDS, 
-                0, new TestContextService(contextCallback), 
-                RejectPolicy.ABORT,
-                RunLocation.LOCAL,
-                true);
+                Integer.MAX_VALUE, 
+                new TestContextService(contextCallback), 
+                RejectPolicy.ABORT);
+    }
+
+    protected ManagedExecutorServiceImpl createManagedExecutor(String name,
+            int corePoolSize, int maxPoolSize, int queueSize) {
+        return new ManagedExecutorServiceImpl(name, null, 0, false,
+                corePoolSize, maxPoolSize,  
+                0, TimeUnit.SECONDS, 
+                queueSize, 
+                new TestContextService(null), 
+                RejectPolicy.ABORT);
+    }
+    
+    BlockingQueue<Runnable> getQueue(ManagedExecutorServiceImpl mes) {
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) mes.getThreadPoolExecutor();
+        return executor.getQueue();
     }
 }

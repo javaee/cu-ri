@@ -55,7 +55,6 @@ import javax.enterprise.concurrent.ManagedScheduledExecutorService;
 import javax.enterprise.concurrent.SkippedException;
 import javax.enterprise.concurrent.Trigger;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RejectPolicy;
-import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RunLocation;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.CallableImpl;
 import org.glassfish.enterprise.concurrent.test.ClassloaderContextSetupProvider;
@@ -726,7 +725,7 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
 
         assertTrue("timeout waiting for taskAborted call", Util.waitForTaskAborted(future, taskListener, getLoggerName()));
         taskListener.verifyCallback(ManagedTaskListenerImpl.ABORTED, future, instance, 
-                task, new CancellationException(), classloaderName);
+                task, new CancellationException());
     }
 
 
@@ -740,10 +739,9 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
                 new ManagedScheduledExecutorServiceImpl(name, null, 0, false,
                     1, 1,  
                     0, TimeUnit.SECONDS, 
-                    0, new TestContextService(contextSetupProvider),
-                    RejectPolicy.ABORT,
-                    RunLocation.LOCAL,
-                    true);
+                    Integer.MAX_VALUE,
+                    new TestContextService(contextSetupProvider),
+                    RejectPolicy.ABORT);
         return mses.getAdapter();
     }
     

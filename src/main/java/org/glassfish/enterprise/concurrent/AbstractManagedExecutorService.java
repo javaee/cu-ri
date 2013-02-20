@@ -67,17 +67,11 @@ extends AbstractExecutorService implements ManagedExecutorService {
         ABORT, RETRY_ABORT
     };
 
-    public enum RunLocation {
-
-        LOCAL, DISTRIBUTABLE, DISTRIBUTABLE_WITH_AFFINITY
-    };
-
     protected final String name;
     protected final ContextSetupProvider contextSetupProvider;
     protected final ContextServiceImpl contextService;
     protected final ManagedThreadFactoryImpl managedThreadFactory;
     protected RejectPolicy rejectPolicy;
-    protected RunLocation runLocation;
     protected final boolean contextualCallback;
 
     public AbstractManagedExecutorService(String name,
@@ -86,15 +80,12 @@ extends AbstractExecutorService implements ManagedExecutorService {
             boolean longRunningTasks,
             ContextServiceImpl contextService,
             ContextSetupProvider contextCallback,
-            RejectPolicy rejectPolicy,
-            RunLocation runLocation,
-            boolean contextualCallback) {
+            RejectPolicy rejectPolicy) {
         this.name = name;
         this.contextSetupProvider = contextCallback;
         this.contextService = contextService;
         this.rejectPolicy = rejectPolicy;
-        this.runLocation = runLocation;
-        this.contextualCallback = contextualCallback;
+        this.contextualCallback = false;
         if (managedThreadFactory == null) {
             managedThreadFactory = new ManagedThreadFactoryImpl(
                     name + "-ManagedThreadFactory",
@@ -203,10 +194,6 @@ extends AbstractExecutorService implements ManagedExecutorService {
 
     public RejectPolicy getRejectPolicy() {
         return rejectPolicy;
-    }
-
-    public RunLocation getRunLocation() {
-        return runLocation;
     }
 
     // managed objects methods

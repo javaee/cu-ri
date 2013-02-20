@@ -42,7 +42,6 @@ package org.glassfish.enterprise.concurrent;
 import java.util.concurrent.TimeUnit;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RejectPolicy;
-import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RunLocation;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.TestContextService;
 
@@ -66,10 +65,9 @@ public class ManagedScheduledExecutorServiceImplTest extends ManagedExecutorServ
         return new ManagedScheduledExecutorServiceImpl(name, null, 0, false,
                     1, 1,  
                     0, TimeUnit.SECONDS, 
-                    0, new TestContextService(contextCallback),
-                    RejectPolicy.ABORT,
-                    RunLocation.LOCAL,
-                    true);
+                    Integer.MAX_VALUE, 
+                    new TestContextService(contextCallback),
+                    RejectPolicy.ABORT);
     }
 
 }

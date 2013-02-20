@@ -78,7 +78,7 @@ public class ClassloaderContextSetupProvider implements ContextSetupProvider {
         ClassLoader contextClassLoader = 
                 new NamedClassLoader(classloaderName, savedContext.originalClassloader);
         Thread.currentThread().setContextClassLoader(contextClassLoader);
-        return contextHandle;
+        return new SavedContext(classloaderBeforeSetup);
     }
 
     @Override
