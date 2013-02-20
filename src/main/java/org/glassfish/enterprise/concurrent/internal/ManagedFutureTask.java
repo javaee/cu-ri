@@ -145,12 +145,14 @@ public class ManagedFutureTask<V> extends FutureTask<V> implements Future<V> {
             // do not run the task
             AbortedException ex = new AbortedException(contextSetupException.getMessage());
             setException(ex);
-            // notify listener. No need to set context here as it wouldn't work
-            // anyway
-            taskListener.taskAborted(this, 
-                        executor.getExecutorForTaskListener(),
-                        task,
-                        ex);     
+            if (taskListener != null) {
+                // notify listener. No need to set context here as it wouldn't work
+                // anyway
+                taskListener.taskAborted(this, 
+                            executor.getExecutorForTaskListener(),
+                            task,
+                            ex);
+            }
         }
     }
 
