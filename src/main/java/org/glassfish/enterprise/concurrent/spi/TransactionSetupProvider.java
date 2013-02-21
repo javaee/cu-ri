@@ -39,15 +39,39 @@
  */
 package org.glassfish.enterprise.concurrent.spi;
 
+import javax.enterprise.concurrent.ManagedTask;
+
 /**
  * To be implemented by application server for performing proper transaction
- * setup before invoking a proxied method of a context object created by 
- * {@code ContextService.createContextObject()} and after the proxied method
+ * setup before invoking a proxy method of a contextual proxy object created by 
+ * {@link ContextService#createContextualProxy()} and after the proxy method
  * has finished running.
  */
 public interface TransactionSetupProvider {
+
+    /**
+     * Method to be called before invoking the proxy method to allow the
+     * Java EE Product Provider to perform any transaction-related setup.
+     * 
+     * @param transactionExecutionProperty The value of the {@link ManagedTask#TRANSACTION}
+     *          execution property for the ContextService that creates the
+     *          contextual proxy object.
+     * @return A TransactionHandle that will be passed back to the 
+     *         {@link #afterProxyMethod(org.glassfish.enterprise.concurrent.spi.TransactionHandle, java.lang.String) }
+     *         after the proxy method returns.
+     */
+    public TransactionHandle beforeProxyMethod(String transactionExecutionProperty);
     
-    public TransactionHandle beforeProxyMethod(boolean useParentTransaction);
-    
-    public void afterProxyMethod(TransactionHandle handle, boolean useParentTransaction);
+
+    /**
+     * Method to be called after invoking the proxy method to allow the 
+     * Java EE Product Provider to perform any transaction-related cleanup.
+     * 
+     * @param handle The TransactionHandle that was returned in the 
+     *               {@link #beforeProxyMethod(java.lang.String) } call.
+     * @param transactionExecutionProperty The value of the {@link ManagedTask#TRANSACTION}
+     *          execution property for the ContextService that creates the
+     *          contextual proxy object.
+     */
+    public void afterProxyMethod(TransactionHandle handle, String transactionExecutionProperty);
 }

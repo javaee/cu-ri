@@ -71,7 +71,7 @@ extends AbstractExecutorService implements ManagedExecutorService {
     protected final ContextSetupProvider contextSetupProvider;
     protected final ContextServiceImpl contextService;
     protected final ManagedThreadFactoryImpl managedThreadFactory;
-    protected RejectPolicy rejectPolicy;
+    protected RejectPolicy rejectPolicy; // currently unused
     protected final boolean contextualCallback;
 
     public AbstractManagedExecutorService(String name,

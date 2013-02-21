@@ -43,6 +43,7 @@ package org.glassfish.enterprise.concurrent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import javax.enterprise.concurrent.ManagedTask;
 import org.glassfish.enterprise.concurrent.test.ClassloaderContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.DummyTransactionSetupProvider;
 import org.glassfish.enterprise.concurrent.test.ManagedTaskListenerImpl;
@@ -80,7 +81,7 @@ public class ContextServiceImplTest {
         task.verifyAfterRun(classloaderName);
         assertNull(contextSetupProvider.contextServiceProperties);
 
-        verifyTransactionSetupProvider(txSetupProvider, false);
+        verifyTransactionSetupProvider(txSetupProvider, ManagedTask.SUSPEND);
         // did we revert the classloader back to the original one?
         assertEquals(original, Thread.currentThread().getContextClassLoader());
     }
@@ -134,6 +135,7 @@ public class ContextServiceImplTest {
         DummyTransactionSetupProvider txSetupProvider = new DummyTransactionSetupProvider();
         Map<String, String> props = new HashMap<>();
         props.put("custom", "true");
+        props.put(ManagedTask.TRANSACTION, ManagedTask.USE_TRANSACTION_OF_EXECUTION_THREAD);
         ComparableRunnableImpl task = new ComparableRunnableImpl(null);
         ContextServiceImpl contextService = 
                 new ContextServiceImpl("myContextService", contextSetupProvider, txSetupProvider);
@@ -146,7 +148,7 @@ public class ContextServiceImplTest {
         task.verifyAfterRun(classloaderName);
         assertEquals("true", contextSetupProvider.contextServiceProperties.get("custom"));
 
-        verifyTransactionSetupProvider(txSetupProvider, false);
+        verifyTransactionSetupProvider(txSetupProvider, ManagedTask.USE_TRANSACTION_OF_EXECUTION_THREAD);
         // did we revert the classloader back to the original one?
         assertEquals(original, Thread.currentThread().getContextClassLoader());
     }
@@ -302,12 +304,12 @@ public class ContextServiceImplTest {
         }
     }
     
-    protected void verifyTransactionSetupProvider(DummyTransactionSetupProvider provider, boolean useParentTransaction) {
+    protected void verifyTransactionSetupProvider(DummyTransactionSetupProvider provider, String transactionExecutionProperty) {
         assertTrue(provider.beforeProxyMethodCalled);
         assertTrue(provider.afterProxyMethodCalled);
         assertTrue(provider.sameTransactionHandle);
-        assertEquals(useParentTransaction, provider.useParentTransactionBefore);
-        assertEquals(useParentTransaction, provider.useParentTransactionAfter);
+        assertEquals(transactionExecutionProperty, provider.transactionExecutionPropertyBefore);
+        assertEquals(transactionExecutionProperty, provider.transactionExecutionPropertyAfter);
     }
     
     public static interface ComparableRunnable extends Runnable, Comparable {

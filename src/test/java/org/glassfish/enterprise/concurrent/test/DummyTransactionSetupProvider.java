@@ -47,21 +47,21 @@ public class DummyTransactionSetupProvider implements TransactionSetupProvider {
 
     public boolean beforeProxyMethodCalled;
     public boolean afterProxyMethodCalled;
-    public boolean useParentTransactionBefore;
-    public boolean useParentTransactionAfter;
+    public String transactionExecutionPropertyBefore;
+    public String transactionExecutionPropertyAfter;
     private TransactionHandleImpl transactionHandle;
     public boolean sameTransactionHandle;
     
-    public TransactionHandle beforeProxyMethod(boolean useParentTransaction) {
+    public TransactionHandle beforeProxyMethod(String transactionExecutionProperty) {
         beforeProxyMethodCalled = true;
-        useParentTransactionBefore = useParentTransaction;
+        transactionExecutionPropertyBefore = transactionExecutionProperty;
         transactionHandle = new TransactionHandleImpl(Long.toString(System.currentTimeMillis()));
         return transactionHandle;
     }
 
-    public void afterProxyMethod(TransactionHandle handle, boolean useParentTransaction) {
+    public void afterProxyMethod(TransactionHandle handle, String transactionExecutionProperty) {
         afterProxyMethodCalled = true;
-        useParentTransactionAfter = useParentTransaction;
+        transactionExecutionPropertyAfter = transactionExecutionProperty;
         sameTransactionHandle = (transactionHandle == handle);
     }
     

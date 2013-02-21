@@ -95,7 +95,7 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
             // to USE_TRANSACTION_OF_EXECUTION_THREAD
             TransactionHandle txHandle = null;
             if (transactionSetupProvider != null) {
-              txHandle = transactionSetupProvider.beforeProxyMethod(useExecutionThreadTransaction());
+              txHandle = transactionSetupProvider.beforeProxyMethod(getTransactionExecutionProperty());
             }
             try {
                 result = method.invoke(proxiedObject, args);
@@ -103,7 +103,7 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
             finally {
                 contextSetupProvider.reset(contextHandleForReset);
                 if (transactionSetupProvider != null) {
-                    transactionSetupProvider.afterProxyMethod(txHandle, useExecutionThreadTransaction());
+                    transactionSetupProvider.afterProxyMethod(txHandle, getTransactionExecutionProperty());
                 }
             }
         }
@@ -124,11 +124,11 @@ public class ContextProxyInvocationHandler implements InvocationHandler {
         return contextService;
     }
     
-    protected boolean useExecutionThreadTransaction() {
-      if (executionProperties != null && "USE_TRANSACTION_OF_EXECUTION_THREAD".equalsIgnoreCase(executionProperties.get(ManagedTask.TRANSACTION))) {
-          return true;
+    protected String getTransactionExecutionProperty() {
+      if (executionProperties != null && executionProperties.get(ManagedTask.TRANSACTION) != null) {
+          return executionProperties.get(ManagedTask.TRANSACTION);
       }
-      return false;
+      return ManagedTask.SUSPEND;
     }
     
 }

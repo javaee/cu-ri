@@ -104,6 +104,9 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
         // an unbounded queue will be used.
         // For any other valid value for queueCapacity, a bounded queue
         // wil be created.
+        if (queueCapacity < 0) {
+            throw new IllegalArgumentException();
+        }
         BlockingQueue<Runnable> queue;
         if (queueCapacity == Integer.MAX_VALUE) {
             if (corePoolSize == 0) {
