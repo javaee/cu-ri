@@ -164,6 +164,14 @@ public class ManagedScheduledExecutorServiceImpl extends AbstractManagedExecutor
         // task.submitted() will be called from threadPoolExecutor.delayExecute()
         threadPoolExecutor.executeManagedTask(task);
     }
-    
 
+    @Override
+    public long getTaskCount() {
+        return threadPoolExecutor.getTaskCount();
+    }
+    
+    @Override
+    public long getCompletedTaskCount() {
+        return threadPoolExecutor.getCompletedTaskCount();
+    }
 }

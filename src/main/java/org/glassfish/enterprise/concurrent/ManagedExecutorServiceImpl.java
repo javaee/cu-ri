@@ -164,4 +164,14 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
     protected ManagedFutureTask getNewTaskFor(Callable callable) {
         return new ManagedFutureTask(this, callable);
     }
+    
+    @Override
+    public long getTaskCount() {
+        return threadPoolExecutor.getTaskCount();
+    }
+    
+    @Override
+    public long getCompletedTaskCount() {
+        return threadPoolExecutor.getCompletedTaskCount();
+    }
 }

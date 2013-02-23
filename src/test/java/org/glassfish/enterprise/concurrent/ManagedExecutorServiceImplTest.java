@@ -43,6 +43,8 @@ package org.glassfish.enterprise.concurrent;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -186,6 +188,24 @@ public class ManagedExecutorServiceImplTest {
                 queue);
         assertEquals(queue, getQueue(mes));
         assertEquals(QUEUE_SIZE, getQueue(mes).remainingCapacity());
+    }
+    
+    @Test
+    public void testTaskCounters() {
+        AbstractManagedExecutorService mes = 
+                (AbstractManagedExecutorService) createManagedExecutor("testTaskCounters", null);
+        assertEquals(0, mes.getTaskCount());
+        assertEquals(0, mes.getCompletedTaskCount());
+        RunnableImpl task = new RunnableImpl(null);
+        Future future = mes.submit(task);
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            Logger.getLogger(ManagedExecutorServiceAdapterTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        assertTrue(future.isDone());
+        assertEquals(1, mes.getTaskCount());
+        assertEquals(1, mes.getCompletedTaskCount()); 
     }
     
     protected ManagedExecutorService createManagedExecutor(String name, 
