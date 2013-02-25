@@ -56,6 +56,8 @@ import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.BlockingRunnableImpl;
 import org.glassfish.enterprise.concurrent.test.RunnableImpl;
 import org.glassfish.enterprise.concurrent.test.TestContextService;
+import org.glassfish.enterprise.concurrent.test.Util;
+import org.glassfish.enterprise.concurrent.test.Util.BooleanValueProducer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -192,7 +194,7 @@ public class ManagedExecutorServiceImplTest {
     
     @Test
     public void testTaskCounters() {
-        AbstractManagedExecutorService mes = 
+        final AbstractManagedExecutorService mes = 
                 (AbstractManagedExecutorService) createManagedExecutor("testTaskCounters", null);
         assertEquals(0, mes.getTaskCount());
         assertEquals(0, mes.getCompletedTaskCount());
@@ -204,6 +206,15 @@ public class ManagedExecutorServiceImplTest {
             Logger.getLogger(ManagedExecutorServiceAdapterTest.class.getName()).log(Level.SEVERE, null, ex);
         }
         assertTrue(future.isDone());
+        Util.waitForBoolean(new BooleanValueProducer() {
+            @Override
+            public boolean getValue() {
+                return (mes.getTaskCount() > 0) && (mes.getCompletedTaskCount() > 0);
+            }
+          }
+                , true, getLoggerName()
+        );
+
         assertEquals(1, mes.getTaskCount());
         assertEquals(1, mes.getCompletedTaskCount()); 
     }
@@ -232,4 +243,9 @@ public class ManagedExecutorServiceImplTest {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) mes.getThreadPoolExecutor();
         return executor.getQueue();
     }
+
+    public String getLoggerName() {
+        return ManagedExecutorServiceImplTest.class.getName();
+    }
+
 }

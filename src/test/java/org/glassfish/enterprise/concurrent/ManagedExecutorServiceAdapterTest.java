@@ -449,6 +449,7 @@ public class ManagedExecutorServiceAdapterTest  {
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());        
         task.verifyAfterRun(taskClassloaderName); // verify context is setup for task
+        Util.waitForTaskDone(future, taskListener, result);
         taskListener.verifyCallback(ManagedTaskListenerImpl.STARTING, future, instance, taskWithListener, null, contextServiceClassloaderName);
         taskListener.verifyCallback(ManagedTaskListenerImpl.SUBMITTED, future, instance, taskWithListener, null, contextServiceClassloaderName);
         taskListener.verifyCallback(ManagedTaskListenerImpl.DONE, future, instance, taskWithListener, null, contextServiceClassloaderName);
