@@ -399,10 +399,13 @@ extends AbstractExecutorService implements ManagedExecutorService {
 
     @Override
     public List<Runnable> shutdownNow() {
-        List<Runnable> runnable = getThreadPoolExecutor().shutdownNow();
-        // TODO: unwrap runnable from FutureTasks
-        // TODO: unwrap runnable from FutureTasks
-        return runnable;
+        List<Runnable> pendingTasks = getThreadPoolExecutor().shutdownNow();
+        for (Runnable r: pendingTasks) {
+            if (r instanceof ManagedFutureTask) {
+                ((ManagedFutureTask) r).cancel(true);
+            }
+        }
+        return pendingTasks;
     }
 
     /**
