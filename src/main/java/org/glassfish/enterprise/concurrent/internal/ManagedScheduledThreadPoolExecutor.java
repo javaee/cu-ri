@@ -57,11 +57,14 @@ import javax.enterprise.concurrent.LastExecution;
 import javax.enterprise.concurrent.SkippedException;
 import javax.enterprise.concurrent.Trigger;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService;
+import org.glassfish.enterprise.concurrent.AbstractManagedThread;
 
 /**
  * ThreadPoolExecutor for running tasks submitted to ScheduledManagedExecutorServiceImpl.
  */
 public class ManagedScheduledThreadPoolExecutor extends ScheduledThreadPoolExecutor {
+
+    private long threadLifeTime = 0L; // in seconds
 
     public ManagedScheduledThreadPoolExecutor(int corePoolSize) {
         super(corePoolSize);
@@ -77,6 +80,18 @@ public class ManagedScheduledThreadPoolExecutor extends ScheduledThreadPoolExecu
 
     public ManagedScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
         super(corePoolSize, threadFactory, handler);
+    }
+
+    public void setThreadLifeTime(long threadLifeTime) {
+        this.threadLifeTime = threadLifeTime;
+        if (threadLifeTime > 0) {
+            // do not set allowCoreThreadTimeOut(true); as warned by 
+            // ScheduledThreadPoolExecutor javadoc
+            long keepAliveTime = getKeepAliveTime(TimeUnit.SECONDS);
+            if (keepAliveTime == 0 || threadLifeTime < keepAliveTime) {
+                setKeepAliveTime(threadLifeTime, TimeUnit.SECONDS);
+            }
+        }
     }
 
    /**
@@ -316,6 +331,16 @@ public class ManagedScheduledThreadPoolExecutor extends ScheduledThreadPoolExecu
         }
         finally {
             task.resetContext();
+            // Kill thread if thread older than threadLifeTime
+            if (threadLifeTime > 0) {
+                Thread thread = Thread.currentThread();
+                if (thread instanceof AbstractManagedThread) {
+                    long threadStartTime = ((AbstractManagedThread)thread).getThreadStartTime();
+                    if ((System.currentTimeMillis() - threadStartTime)/1000 > threadLifeTime) {
+                        throw new ThreadExpiredException();
+                    }
+                }
+            }
         }
     }
 

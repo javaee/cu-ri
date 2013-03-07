@@ -955,7 +955,8 @@ public class ManagedExecutorServiceAdapterTest  {
                 new ManagedExecutorServiceImpl(name, null, 0, false,
                     1, 1,  
                     0, TimeUnit.SECONDS, 
-                    Integer.MAX_VALUE, 
+                    0L,
+                    Integer.MAX_VALUE,
                     new TestContextService(contextSetupProvider), 
                     RejectPolicy.ABORT);
         return mes.getAdapter();

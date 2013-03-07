@@ -54,7 +54,7 @@ public class ManagedThreadFactoryImplTest {
         ManagedThreadFactoryImpl factory = new ManagedThreadFactoryImpl("test1");
         Runnable r = new RunnableImpl(null);
         Thread newThread = factory.newThread(r);
-        verifyThreadProperties(newThread, false, Thread.NORM_PRIORITY);
+        verifyThreadProperties(newThread, true, Thread.NORM_PRIORITY);
     }
 
     @Test
@@ -62,12 +62,12 @@ public class ManagedThreadFactoryImplTest {
         final int PRIORITY = 7;
         ContextSetupProvider callback = new ClassloaderContextSetupProvider("ManagedThreadFactoryImplTest");
         ContextServiceImpl contextService = new TestContextService(callback);
-        ManagedThreadFactoryImpl factory = new ManagedThreadFactoryImpl("test1", contextService, PRIORITY, false);
+        ManagedThreadFactoryImpl factory = new ManagedThreadFactoryImpl("test1", contextService, PRIORITY);
         Runnable r = new RunnableImpl(null);
         Thread newThread = factory.newThread(r);
-        verifyThreadProperties(newThread, false, PRIORITY);
+        verifyThreadProperties(newThread, true, PRIORITY);
 
-        ManagedThreadFactoryImpl factory2 = new ManagedThreadFactoryImpl("test1", contextService, Thread.MIN_PRIORITY, true);
+        ManagedThreadFactoryImpl factory2 = new ManagedThreadFactoryImpl("test1", contextService, Thread.MIN_PRIORITY);
         newThread = factory2.newThread(r);
         verifyThreadProperties(newThread, true, Thread.MIN_PRIORITY);
     }

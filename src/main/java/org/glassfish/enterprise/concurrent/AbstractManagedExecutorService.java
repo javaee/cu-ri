@@ -73,6 +73,7 @@ extends AbstractExecutorService implements ManagedExecutorService {
     protected final ManagedThreadFactoryImpl managedThreadFactory;
     protected RejectPolicy rejectPolicy; // currently unused
     protected final boolean contextualCallback;
+    protected boolean longRunningTasks;
 
     public AbstractManagedExecutorService(String name,
             ManagedThreadFactoryImpl managedThreadFactory,
@@ -86,12 +87,12 @@ extends AbstractExecutorService implements ManagedExecutorService {
         this.contextService = contextService;
         this.rejectPolicy = rejectPolicy;
         this.contextualCallback = false;
+        this.longRunningTasks = longRunningTasks;
         if (managedThreadFactory == null) {
             managedThreadFactory = new ManagedThreadFactoryImpl(
                     name + "-ManagedThreadFactory",
                     null,
-                    Thread.NORM_PRIORITY,
-                    longRunningTasks);            
+                    Thread.NORM_PRIORITY);            
         }
         managedThreadFactory.setHungTaskThreshold(hungTaskThreshold);
 
@@ -179,9 +180,24 @@ extends AbstractExecutorService implements ManagedExecutorService {
         return contextualCallback;
     }
 
-    public String[] getHungThreads() {
-        // TODO: implement me
-        return null;
+    public Collection<AbstractManagedThread> getHungThreads() {
+        if (longRunningTasks) {
+            return null;
+        }
+        Collection<AbstractManagedThread> hungThreads = null;
+        Collection<AbstractManagedThread> allThreads = getThreads();
+        if (allThreads != null) {
+            long now = System.currentTimeMillis();
+            for (AbstractManagedThread thread: allThreads) {
+                if (thread.isTaskHung(now)) {
+                    if (hungThreads == null) {
+                        hungThreads = new ArrayList<>();
+                    }
+                    hungThreads.add(thread);
+                }
+            }
+        }        
+        return hungThreads;
     }
 
     public ManagedThreadFactoryImpl getManagedThreadFactory() {
@@ -190,6 +206,10 @@ extends AbstractExecutorService implements ManagedExecutorService {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isLongRunningTasks() {
+        return longRunningTasks;
     }
 
     public RejectPolicy getRejectPolicy() {
@@ -201,8 +221,13 @@ extends AbstractExecutorService implements ManagedExecutorService {
         return null;
     }
 
-    public String[] getThreads() {
-        return null;
+    /**
+     * Return an array of threads in this Managed[Scheduled]ExecutorService
+     * @return an array of threads in this Managed[Scheduled]ExecutorService.
+     *         It returns null if there is no thread.
+     */
+    public Collection<AbstractManagedThread> getThreads() {
+        return managedThreadFactory.getThreads();
     }
 
     @Override

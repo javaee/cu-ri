@@ -738,7 +738,8 @@ public class ManagedScheduledExecutorServiceAdapterTest extends ManagedExecutorS
         ManagedScheduledExecutorServiceImpl mses = 
                 new ManagedScheduledExecutorServiceImpl(name, null, 0, false,
                     1, 1,  
-                    0, TimeUnit.SECONDS, 
+                    0, TimeUnit.SECONDS,
+                    0L,
                     Integer.MAX_VALUE,
                     new TestContextService(contextSetupProvider),
                     RejectPolicy.ABORT);

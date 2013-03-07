@@ -45,7 +45,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import org.glassfish.enterprise.concurrent.internal.ManagedFutureTask;
@@ -56,7 +55,7 @@ import org.glassfish.enterprise.concurrent.internal.ManagedThreadPoolExecutor;
  */
 public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
     
-    protected final ThreadPoolExecutor threadPoolExecutor;
+    protected final ManagedThreadPoolExecutor threadPoolExecutor;
 
     // The adapter to be returned to the caller needs to have all the lifecycle 
     // methods disabled
@@ -66,8 +65,9 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
             ManagedThreadFactoryImpl managedThreadFactory,
             long hungTaskThreshold,
             boolean longRunningTasks,
-            int corePoolSize, int maxPoolSize, int keepAliveTime, 
+            int corePoolSize, int maxPoolSize, long keepAliveTime, 
             TimeUnit keepAliveTimeUnit,
+            long threadLifeTime,
             ContextServiceImpl contextService,
             RejectPolicy rejectPolicy,
             BlockingQueue<Runnable> queue) {
@@ -78,6 +78,7 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
         threadPoolExecutor = new ManagedThreadPoolExecutor(corePoolSize, maxPoolSize, 
                 keepAliveTime, keepAliveTimeUnit, queue, 
                 this.managedThreadFactory);
+        threadPoolExecutor.setThreadLifeTime(threadLifeTime);
         adapter = new ManagedExecutorServiceAdapter(this);
     }
     
@@ -85,8 +86,10 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
             ManagedThreadFactoryImpl managedThreadFactory,
             long hungTaskThreshold,
             boolean longRunningTasks,
-            int corePoolSize, int maxPoolSize, int keepAliveTime, 
-            TimeUnit keepAliveTimeUnit, int queueCapacity,
+            int corePoolSize, int maxPoolSize, long keepAliveTime, 
+            TimeUnit keepAliveTimeUnit, 
+            long threadLifeTime,
+            int queueCapacity,
             ContextServiceImpl contextService,
             RejectPolicy rejectPolicy) {
         super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks,
@@ -124,6 +127,7 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
         threadPoolExecutor = new ManagedThreadPoolExecutor(corePoolSize, maxPoolSize, 
                 keepAliveTime, keepAliveTimeUnit, queue, 
                 this.managedThreadFactory);
+        threadPoolExecutor.setThreadLifeTime(threadLifeTime);
         adapter = new ManagedExecutorServiceAdapter(this);
     }
  
@@ -174,4 +178,5 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
     public long getCompletedTaskCount() {
         return threadPoolExecutor.getCompletedTaskCount();
     }
+    
 }

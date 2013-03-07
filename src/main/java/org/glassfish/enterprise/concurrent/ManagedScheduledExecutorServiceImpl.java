@@ -62,8 +62,9 @@ public class ManagedScheduledExecutorServiceImpl extends AbstractManagedExecutor
             boolean longRunningTasks, 
             int corePoolSize, 
             int maxPoolSize, 
-            int keepAliveTime, 
-            TimeUnit keepAliveTimeUnit, 
+            long keepAliveTime, 
+            TimeUnit keepAliveTimeUnit,
+            long threadLifeTime,
             int queueCapacity, 
             ContextServiceImpl contextService,
             RejectPolicy rejectPolicy) {
@@ -74,6 +75,8 @@ public class ManagedScheduledExecutorServiceImpl extends AbstractManagedExecutor
 
         threadPoolExecutor = new ManagedScheduledThreadPoolExecutor(corePoolSize, 
                 this.managedThreadFactory);
+        threadPoolExecutor.setKeepAliveTime(keepAliveTime, keepAliveTimeUnit);
+        threadPoolExecutor.setThreadLifeTime(threadLifeTime);
         adapter = new ManagedScheduledExecutorServiceAdapter(this);
     }
     

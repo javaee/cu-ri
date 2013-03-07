@@ -40,6 +40,7 @@
 
 package org.glassfish.enterprise.concurrent;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -60,6 +61,7 @@ import org.glassfish.enterprise.concurrent.test.Util;
 import org.glassfish.enterprise.concurrent.test.Util.BooleanValueProducer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
@@ -185,7 +187,7 @@ public class ManagedExecutorServiceImplTest {
         BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(QUEUE_SIZE);
         ManagedExecutorServiceImpl mes = 
                 new ManagedExecutorServiceImpl("mes", null, 0, false,
-                1, 10, 0, TimeUnit.SECONDS, 
+                1, 10, 0, TimeUnit.SECONDS, 0L,
                 new TestContextService(null), RejectPolicy.ABORT,
                 queue);
         assertEquals(queue, getQueue(mes));
@@ -219,21 +221,118 @@ public class ManagedExecutorServiceImplTest {
         assertEquals(1, mes.getCompletedTaskCount()); 
     }
     
+    @Test
+    public void testThreadLifeTime() {
+        final AbstractManagedExecutorService mes = 
+                createManagedExecutor("testThreadLifeTime", 
+                1, 2, 0, 3L, 0L, false);
+        
+        Collection<AbstractManagedThread> threads = mes.getThreads();
+        assertNull(threads);
+        
+        RunnableImpl runnable = new RunnableImpl(null);
+        Future f = mes.submit(runnable);
+        try {
+            f.get();
+        } catch (Exception ex) {
+            Logger.getLogger(ManagedExecutorServiceImplTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        threads = mes.getThreads();
+        assertEquals(1, threads.size());
+        System.out.println("Waiting for threads to expire due to threadLifeTime");
+        Util.waitForBoolean(new BooleanValueProducer() {
+            public boolean getValue() {
+                // wait for all threads get expired
+                return mes.getThreads() == null;
+            }
+        }, true, getLoggerName());
+        
+    }
+        
+    @Test
+    public void testHungThreads() {
+        final AbstractManagedExecutorService mes = 
+                createManagedExecutor("testThreadLifeTime", 
+                1, 2, 0, 0L, 1L, false);
+        
+        Collection<AbstractManagedThread> threads = mes.getHungThreads();
+        assertNull(threads);
+        
+        BlockingRunnableImpl runnable = new BlockingRunnableImpl(null, 0L);
+        Future f = mes.submit(runnable);
+        try {
+            Thread.sleep(1000); // sleep for 1 second
+        } catch (InterruptedException ex) {
+        }
+        
+        // should get one hung thread
+        threads = mes.getHungThreads();
+        assertEquals(1, threads.size());
+        
+        // tell task to stop waiting
+        runnable.stopBlocking();
+        Util.waitForTaskComplete(runnable, getLoggerName());
+
+        // should not have any more hung threads
+        threads = mes.getHungThreads();
+        assertNull(threads);
+    }
+        
+    @Test
+    public void testHungThreads_LongRunningTasks() {
+        final AbstractManagedExecutorService mes = 
+                createManagedExecutor("testThreadLifeTime", 
+                1, 2, 0, 0L, 1L, true);
+        
+        Collection<AbstractManagedThread> threads = mes.getHungThreads();
+        assertNull(threads);
+        
+        BlockingRunnableImpl runnable = new BlockingRunnableImpl(null, 0L);
+        Future f = mes.submit(runnable);
+        try {
+            Thread.sleep(1000); // sleep for 1 second
+        } catch (InterruptedException ex) {
+        }
+        
+        // should not get any hung thread because longRunningTasks is true
+        threads = mes.getHungThreads();
+        assertNull(threads);
+        
+        // tell task to stop waiting
+        runnable.stopBlocking();
+        Util.waitForTaskComplete(runnable, getLoggerName());
+
+        // should not have any more hung threads
+        threads = mes.getHungThreads();
+        assertNull(threads);
+    }
+        
     protected ManagedExecutorService createManagedExecutor(String name, 
             ContextSetupProvider contextCallback) {
         return new ManagedExecutorServiceImpl(name, null, 0, false,
                 1, 1,  
-                0, TimeUnit.SECONDS, 
+                0, TimeUnit.SECONDS,
+                0L,
                 Integer.MAX_VALUE, 
                 new TestContextService(contextCallback), 
                 RejectPolicy.ABORT);
     }
 
     protected ManagedExecutorServiceImpl createManagedExecutor(String name,
-            int corePoolSize, int maxPoolSize, int queueSize) {
-        return new ManagedExecutorServiceImpl(name, null, 0, false,
+        int corePoolSize, int maxPoolSize, int queueSize) {
+        return createManagedExecutor(name, corePoolSize, maxPoolSize,
+                queueSize, 0L, 0L, false);
+    }
+
+    protected ManagedExecutorServiceImpl createManagedExecutor(String name,
+            int corePoolSize, int maxPoolSize, int queueSize, long threadLifeTime, 
+            long hungTask, boolean longRunningTasks) {
+        return new ManagedExecutorServiceImpl(name, null, hungTask,
+                longRunningTasks,
                 corePoolSize, maxPoolSize,  
-                0, TimeUnit.SECONDS, 
+                0, TimeUnit.SECONDS,
+                threadLifeTime,
                 queueSize, 
                 new TestContextService(null), 
                 RejectPolicy.ABORT);

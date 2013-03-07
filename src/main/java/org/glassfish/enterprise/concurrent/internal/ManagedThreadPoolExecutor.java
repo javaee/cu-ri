@@ -41,12 +41,15 @@
 package org.glassfish.enterprise.concurrent.internal;
 
 import java.util.concurrent.*;
+import org.glassfish.enterprise.concurrent.AbstractManagedThread;
 
 /**
  * ThreadPoolExecutor for running tasks submitted to ManagedExecutorServiceImpl.
  */
 public class ManagedThreadPoolExecutor extends ThreadPoolExecutor {
 
+    private long threadLifeTime = 0L; // in seconds
+    
     public ManagedThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
     }
@@ -63,6 +66,18 @@ public class ManagedThreadPoolExecutor extends ThreadPoolExecutor {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
     }
 
+    public void setThreadLifeTime(long threadLifeTime) {
+        this.threadLifeTime = threadLifeTime;
+        if (threadLifeTime > 0) {
+            long keepAliveTime = getKeepAliveTime(TimeUnit.SECONDS);
+            if (keepAliveTime == 0 || threadLifeTime < keepAliveTime) {
+                setKeepAliveTime(threadLifeTime, TimeUnit.SECONDS);
+                allowCoreThreadTimeOut(true);
+            }
+        }
+    }
+
+    
     @Override
     protected void afterExecute(Runnable r, Throwable t) {
         super.afterExecute(r, t);
@@ -73,6 +88,16 @@ public class ManagedThreadPoolExecutor extends ThreadPoolExecutor {
         }
         finally {
             task.resetContext();
+            // Kill thread if thread older than threadLifeTime
+            if (threadLifeTime > 0) {
+                Thread thread = Thread.currentThread();
+                if (thread instanceof AbstractManagedThread) {
+                    long threadStartTime = ((AbstractManagedThread)thread).getThreadStartTime();
+                    if ((System.currentTimeMillis() - threadStartTime)/1000 > threadLifeTime) {
+                        throw new ThreadExpiredException();
+                    }
+                }
+            }
         }
     }
 

@@ -42,14 +42,17 @@ package org.glassfish.enterprise.concurrent;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.enterprise.concurrent.ManageableThread;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.enterprise.concurrent.ManagedThreadFactory;
 import org.glassfish.enterprise.concurrent.internal.ManagedFutureTask;
+import org.glassfish.enterprise.concurrent.internal.ThreadExpiredException;
 import org.glassfish.enterprise.concurrent.spi.ContextHandle;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 
@@ -58,7 +61,7 @@ import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
  */
 public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
 
-    private List<ManagedThread> threads;
+    private List<AbstractManagedThread> threads;
     private boolean stopped = false;
     private Lock lock; // protects threads and stopped
 
@@ -74,27 +77,24 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
     final private ContextServiceImpl contextService;
     private int priority;
     private long hungTaskThreshold = 0L; // in milliseconds
-    private boolean longRunningTasks;
     private AtomicInteger threadIdSequence = new AtomicInteger();
 
 
     public ManagedThreadFactoryImpl(String name) {
-        this(name, null, Thread.NORM_PRIORITY, false);
+        this(name, null, Thread.NORM_PRIORITY);
     }
 
     public ManagedThreadFactoryImpl(String name, ContextServiceImpl contextService) {
-        this(name, contextService, Thread.NORM_PRIORITY, false);
+        this(name, contextService, Thread.NORM_PRIORITY);
     }
 
     public ManagedThreadFactoryImpl(String name,
                                     ContextServiceImpl contextService,
-                                    int priority,
-                                    boolean longRunningTasks) {
+                                    int priority) {
         this.name = name;
         this.contextService = contextService;
         this.contextSetupProvider = contextService != null? contextService.getContextSetupProvider(): null;
         this.priority = priority;
-        this.longRunningTasks = longRunningTasks;
         threads = new ArrayList<>();
         lock = new ReentrantLock();
     }
@@ -123,11 +123,9 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
             if (contextSetupProvider != null) {
                 contextHandleForSetup = contextSetupProvider.saveContext(contextService);
             }
-            ManagedThread newThread = createThread(r, contextHandleForSetup);
+            AbstractManagedThread newThread = createThread(r, contextHandleForSetup);
             newThread.setPriority(priority);
-            if (longRunningTasks) {
-                newThread.setDaemon(true);
-            }
+            newThread.setDaemon(true);
             threads.add(newThread);
             return newThread;
         }
@@ -136,7 +134,7 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         }
     }
 
-    protected ManagedThread createThread(final Runnable r, final ContextHandle contextHandleForSetup) {
+    protected AbstractManagedThread createThread(final Runnable r, final ContextHandle contextHandleForSetup) {
         if (System.getSecurityManager() == null) {
             return new ManagedThread(r, contextHandleForSetup);
         } else {
@@ -160,6 +158,24 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         }
     }
     
+    /**
+     * Return an array of threads in this ManagedThreadFactoryImpl
+     * @return an array of threads in this ManagedThreadFactoryImpl.
+     *         It returns null if there is no thread.
+     */
+    protected Collection<AbstractManagedThread> getThreads() {
+        Collection<AbstractManagedThread> result = null;
+        lock.lock();
+        try {
+            if (!threads.isEmpty()) {
+                result = new ArrayList<>(threads);
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+        return result;
+    }
     public void taskStarting(Thread t, ManagedFutureTask task) {
         if (t instanceof ManagedThread) {
             ManagedThread mt = (ManagedThread) t;
@@ -190,9 +206,9 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
       try {
         stopped = true;
         // interrupt all the threads created by this factory
-        Iterator<ManagedThread> iter = threads.iterator();
+        Iterator<AbstractManagedThread> iter = threads.iterator();
         while(iter.hasNext()) {
-            ManagedThread t = iter.next();
+            AbstractManagedThread t = iter.next();
             try {
                t.shutdown(); // mark threads as shutting down
                t.interrupt();
@@ -208,12 +224,10 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
     /**
      * ManageableThread to be returned by {@code ManagedThreadFactory.newThread()}
      */
-    public class ManagedThread extends Thread implements ManageableThread {
-
-        volatile long taskStartTime = 0L;
-        volatile ManagedFutureTask task = null;
-        volatile boolean shutdown = false;
+    public class ManagedThread extends AbstractManagedThread {
         final ContextHandle contextHandleForSetup;
+        volatile ManagedFutureTask task = null;
+        volatile long taskStartTime = 0L;
         
         public ManagedThread(Runnable target, ContextHandle contextHandleForSetup) {
             super(target);
@@ -229,8 +243,10 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
                     handle = contextSetupProvider.setup(contextHandleForSetup);
                 }
                 super.run();
+            } catch (ThreadExpiredException ex) {
+                Logger.getLogger("org.glassfish.enterprise.concurrent").log(Level.INFO, ex.toString());
             } catch (Throwable t) {
-                t.printStackTrace();
+                Logger.getLogger("org.glassfish.enterprise.concurrent").log(Level.SEVERE, t.toString());
             } finally {
                 if (handle != null) {
                     contextSetupProvider.reset(handle);
@@ -239,47 +255,43 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
             }
         }
         
-        long getTaskRunTime(long now) {
-            if (taskStartTime > 0) {
-                long taskRunTime = now - taskStartTime;
-                return taskRunTime > 0? taskRunTime: 0;
-            }
-            return 0;
-        }
-        
-        boolean isTaskHung(long now) {
-            if (hungTaskThreshold > 0) {
-                return getTaskRunTime(now) - hungTaskThreshold > 0;
-            }
-            return false;
-        }
-        
+        @Override
         boolean cancelTask() {
             if (task != null) {
                 return task.cancel(true);
             }
             return false;
         }
-        
+
+        @Override
         String getTaskIdentityName() {
             if (task != null) {
                 return task.getTaskIdentityName();
             }
             return "null";
         }
-        
-        /**
-         * Marks the thread for shutdown so application components could 
-         * check the status of this thread and finish any work as soon
-         * as possible.
-         */
-        public void shutdown() {
-            shutdown = true;
-        }
-        
+
         @Override
-        public boolean isShutdown() {
-            return shutdown;
+        long getTaskRunTime(long now) {
+            if (task != null && taskStartTime > 0) {
+                long taskRunTime = now - taskStartTime;
+                return taskRunTime > 0 ? taskRunTime : 0;
+            }
+            return 0;
         }
+
+        @Override
+        public long getThreadStartTime() {
+            return threadStartTime;
+        }
+
+        @Override
+        boolean isTaskHung(long now) {
+            if (hungTaskThreshold > 0) {
+                return getTaskRunTime(now) - hungTaskThreshold > 0;
+            }
+            return false;
+        }
+
     }
 }
