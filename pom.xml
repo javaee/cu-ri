@@ -95,7 +95,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javax.enterprise.concurrent-api.version>1.0-b04</javax.enterprise.concurrent-api.version>
+        <javax.enterprise.concurrent-api.version>1.0-b05</javax.enterprise.concurrent-api.version>
 
     </properties>
 
