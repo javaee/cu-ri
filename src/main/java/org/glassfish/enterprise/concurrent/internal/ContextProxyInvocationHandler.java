@@ -39,6 +39,7 @@
  */
 package org.glassfish.enterprise.concurrent.internal;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -54,15 +55,17 @@ import org.glassfish.enterprise.concurrent.spi.TransactionSetupProvider;
 /**
  * InvocationHandler used by ContextServiceImpl
  */
-public class ContextProxyInvocationHandler implements InvocationHandler {
+public class ContextProxyInvocationHandler implements InvocationHandler, Serializable {
 
+    static final long serialVersionUID = -2887560418884002777L;
+    
     final protected ContextSetupProvider contextSetupProvider;
-    final protected ContextService contextService;
+    protected transient ContextService contextService;
     final protected ContextHandle capturedContextHandle;
     final protected TransactionSetupProvider transactionSetupProvider;
     final protected Object proxiedObject;
     protected Map<String, String> executionProperties;
-
+   
     public ContextProxyInvocationHandler(ContextServiceImpl contextService, Object proxiedObject, 
             Map<String, String> executionProperties) {
         this.contextSetupProvider = contextService.getContextSetupProvider();

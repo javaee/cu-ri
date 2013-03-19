@@ -39,6 +39,7 @@
  */
 package org.glassfish.enterprise.concurrent.spi;
 
+import java.io.Serializable;
 import javax.enterprise.concurrent.ContextService;
 import javax.enterprise.concurrent.ManagedTask;
 
@@ -48,7 +49,7 @@ import javax.enterprise.concurrent.ManagedTask;
  * various {@code createContextualProxy} methods in {@link ContextService} 
  * and after the proxy method has finished running.
  */
-public interface TransactionSetupProvider {
+public interface TransactionSetupProvider extends Serializable {
 
     /**
      * Method to be called before invoking the proxy method to allow the

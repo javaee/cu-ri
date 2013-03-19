@@ -40,6 +40,11 @@
 
 package org.glassfish.enterprise.concurrent;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -47,6 +52,7 @@ import javax.enterprise.concurrent.ManagedTask;
 import org.glassfish.enterprise.concurrent.test.ClassloaderContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.DummyTransactionSetupProvider;
 import org.glassfish.enterprise.concurrent.test.ManagedTaskListenerImpl;
+import org.glassfish.enterprise.concurrent.test.NamedClassLoader;
 import org.glassfish.enterprise.concurrent.test.RunnableImpl;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -207,6 +213,37 @@ public class ContextServiceImplTest {
     }
 
     @Test
+    public void testCreateContextualProxy_serializable() throws Exception {
+        final String classloaderName = "testCreateContextualProxy_serializable";
+        ClassloaderContextSetupProvider contextSetupProvider = new ClassloaderContextSetupProvider(classloaderName);
+        DummyTransactionSetupProvider txSetupProvider = new DummyTransactionSetupProvider();
+        SerializableCallable task = new SerializableCallable();
+        ContextServiceImpl contextService = 
+                new ContextServiceImpl("myContextService", contextSetupProvider, txSetupProvider);
+        Callable<String> proxy = contextService.createContextualProxy(task, Callable.class);
+
+        assertTrue(proxy instanceof Serializable);
+        
+        // verify that the proxy can be serialized
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream() ;
+            ObjectOutputStream out = new ObjectOutputStream(bos) ;
+            out.writeObject(proxy);
+            out.close();
+            byte[] bytes = bos.toByteArray();
+            
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+            Object deserialized = ois.readObject();
+            assertTrue(deserialized instanceof Callable);
+            assertEquals(classloaderName, ((Callable)deserialized).call());
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.toString());
+        }
+    }
+
+
+    @Test
     public void testContextualProxy_hashCode() throws Exception {
         final String classloaderName = "testContextualProxy_hashCode";
         ClassloaderContextSetupProvider contextSetupProvider = new ClassloaderContextSetupProvider(classloaderName);
@@ -331,6 +368,19 @@ public class ContextServiceImplTest {
             // we are not really interested in compareTo. We just want to 
             // have a class that implements multiple interfaces
             throw new UnsupportedOperationException("Not supported yet.");
+        }
+        
+    }
+    
+    public static class SerializableCallable implements Callable<String>, Serializable {
+
+        @Override
+        public String call() {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl instanceof NamedClassLoader) {
+                return ((NamedClassLoader)cl).getName();
+            }
+            return cl.toString();
         }
         
     }

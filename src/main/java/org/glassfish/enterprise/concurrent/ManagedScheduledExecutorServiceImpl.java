@@ -61,11 +61,9 @@ public class ManagedScheduledExecutorServiceImpl extends AbstractManagedExecutor
             long hungTaskThreshold, 
             boolean longRunningTasks, 
             int corePoolSize, 
-            int maxPoolSize, 
             long keepAliveTime, 
             TimeUnit keepAliveTimeUnit,
             long threadLifeTime,
-            int queueCapacity, 
             ContextServiceImpl contextService,
             RejectPolicy rejectPolicy) {
         super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks,

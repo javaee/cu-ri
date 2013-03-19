@@ -47,7 +47,7 @@ import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 public class ClassloaderContextSetupProvider implements ContextSetupProvider {
 
     private String classloaderName;
-    public ClassLoader classloaderBeforeSetup; // for test verification
+    public transient ClassLoader classloaderBeforeSetup; // for test verification
     public volatile int numResetCalled = 0;
     public volatile Map<String, String> contextServiceProperties; // for test verification
     public String throwsOnSetupMessage = null;
@@ -95,7 +95,7 @@ public class ClassloaderContextSetupProvider implements ContextSetupProvider {
     }
     
     static class SavedContext implements ContextHandle {
-        ClassLoader originalClassloader;
+        transient ClassLoader originalClassloader;
 
         public SavedContext(ClassLoader originalClassloader) {
             this.originalClassloader = originalClassloader;

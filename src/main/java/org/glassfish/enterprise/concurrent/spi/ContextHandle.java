@@ -39,10 +39,12 @@
  */
 package org.glassfish.enterprise.concurrent.spi;
 
+import java.io.Serializable;
+
 /**
  * To be implemented by application server for identifying context information.
  * Used by {@code ContextSetupProvider}.
  */
-public interface ContextHandle {
+public interface ContextHandle extends Serializable {
     
 }
