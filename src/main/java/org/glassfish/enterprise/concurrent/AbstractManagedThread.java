@@ -70,10 +70,30 @@ public abstract class AbstractManagedThread extends Thread implements Manageable
 
     abstract boolean cancelTask();
 
-    abstract String getTaskIdentityName();
+    /**
+     * Return the identity name of the task that is being run on this thread.
+     * 
+     * @return The identity name of the task that is being run on this thread, or
+     * "null" if there is none.
+     */
+    abstract public String getTaskIdentityName();
 
-    abstract long getTaskRunTime(long now);
+    /**
+     * Return the time in millisecond since the task has started.
+     * 
+     * @param now The current time in milliseconds, which is typically obtained
+     *            by calling {@link System#currentTimeMillis() }
+     * 
+     * @return The time since the task has started in milliseconds.
+     */
+    abstract public long getTaskRunTime(long now);
 
+    /**
+     * Return the time that the thread was started, measured in milliseconds, 
+     * between the current time and midnight, January 1, 1970 UTC.
+     * 
+     * @return The time that the thread was started, in milliseconds. 
+     */
     public abstract long getThreadStartTime();
 
     abstract boolean isTaskHung(long now);

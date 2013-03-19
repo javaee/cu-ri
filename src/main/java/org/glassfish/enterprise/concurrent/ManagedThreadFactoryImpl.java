@@ -264,7 +264,7 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         }
 
         @Override
-        String getTaskIdentityName() {
+        public String getTaskIdentityName() {
             if (task != null) {
                 return task.getTaskIdentityName();
             }
@@ -272,7 +272,7 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         }
 
         @Override
-        long getTaskRunTime(long now) {
+        public long getTaskRunTime(long now) {
             if (task != null && taskStartTime > 0) {
                 long taskRunTime = now - taskStartTime;
                 return taskRunTime > 0 ? taskRunTime : 0;
