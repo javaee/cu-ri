@@ -79,6 +79,7 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
     private long hungTaskThreshold = 0L; // in milliseconds
     private AtomicInteger threadIdSequence = new AtomicInteger();
 
+    public static final String MANAGED_THREAD_FACTORY_STOPPED = "ManagedThreadFactory is stopped";
 
     public ManagedThreadFactoryImpl(String name) {
         this(name, null, Thread.NORM_PRIORITY);
@@ -116,8 +117,8 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
         lock.lock();
         try {
             if (stopped) {
-                // do not create new thread if stopped
-                return null;
+                // Do not create new thread and throw IllegalStateException if stopped
+                throw new IllegalStateException(MANAGED_THREAD_FACTORY_STOPPED);
             }
             ContextHandle contextHandleForSetup = null;
             if (contextSetupProvider != null) {

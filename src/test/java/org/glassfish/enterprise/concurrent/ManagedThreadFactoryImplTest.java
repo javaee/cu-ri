@@ -85,6 +85,14 @@ public class ManagedThreadFactoryImplTest {
         r.verifyAfterRun(CLASSLOADER_NAME);
     }
 
+    @Test (expected = IllegalStateException.class)
+    public void testNewThread_shutdown() throws Exception {
+        ManagedThreadFactoryImpl factory = new ManagedThreadFactoryImpl("testNewThread_shutdown");
+        Runnable r = new RunnableImpl(null);
+        factory.stop();
+        Thread newThread = factory.newThread(r);
+    }
+
     private void verifyThreadProperties(Thread thread, boolean isDaemon, int priority) {
         assertEquals(isDaemon, thread.isDaemon());
         assertEquals(priority, thread.getPriority());
