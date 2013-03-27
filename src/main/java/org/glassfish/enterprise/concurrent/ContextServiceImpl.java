@@ -39,6 +39,7 @@
  */
 package org.glassfish.enterprise.concurrent;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.Enumeration;
@@ -51,8 +52,10 @@ import org.glassfish.enterprise.concurrent.spi.TransactionSetupProvider;
 /**
  * Implementation of ContextService interface
  */
-public class ContextServiceImpl implements ContextService {
+public class ContextServiceImpl implements ContextService, Serializable {
 
+    static final long serialVersionUID = -386695836029966433L;
+    
     protected final ContextSetupProvider contextSetupProvider;
     protected final TransactionSetupProvider transactionSetupProvider;
     protected final String name;

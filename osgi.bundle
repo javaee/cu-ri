@@ -39,4 +39,5 @@
   -->
 -exportcontents: \
                         org.glassfish.enterprise.concurrent; \
+                        org.glassfish.enterprise.concurrent.internal;; \
                         org.glassfish.enterprise.concurrent.spi; version=1.0

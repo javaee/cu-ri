@@ -60,7 +60,7 @@ public class ContextProxyInvocationHandler implements InvocationHandler, Seriali
     static final long serialVersionUID = -2887560418884002777L;
     
     final protected ContextSetupProvider contextSetupProvider;
-    protected transient ContextService contextService;
+    protected ContextService contextService;
     final protected ContextHandle capturedContextHandle;
     final protected TransactionSetupProvider transactionSetupProvider;
     final protected Object proxiedObject;
