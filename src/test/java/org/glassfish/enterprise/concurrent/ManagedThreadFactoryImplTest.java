@@ -39,12 +39,15 @@
  */
 package org.glassfish.enterprise.concurrent;
 
+import javax.enterprise.concurrent.ManageableThread;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.ClassloaderContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.RunnableImpl;
 import org.glassfish.enterprise.concurrent.test.TestContextService;
 import org.glassfish.enterprise.concurrent.test.Util;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class ManagedThreadFactoryImplTest {
@@ -52,9 +55,12 @@ public class ManagedThreadFactoryImplTest {
     @Test
     public void testNewThread_default() throws Exception {
         ManagedThreadFactoryImpl factory = new ManagedThreadFactoryImpl("test1");
-        Runnable r = new RunnableImpl(null);
+        TestRunnable r = new TestRunnable();
         Thread newThread = factory.newThread(r);
         verifyThreadProperties(newThread, true, Thread.NORM_PRIORITY);
+        newThread.start();
+        newThread.join();
+        assertFalse(r.isInterrupted);
     }
 
     @Test
@@ -93,6 +99,19 @@ public class ManagedThreadFactoryImplTest {
         Thread newThread = factory.newThread(r);
     }
 
+    @Test
+    public void testNewThread_start_aftershutdown() throws Exception {
+        ManagedThreadFactoryImpl factory = new ManagedThreadFactoryImpl("testNewThread_start_aftershutdown");
+        TestRunnable r = new TestRunnable();
+        Thread newThread = factory.newThread(r);
+        assertFalse(((ManageableThread)newThread).isShutdown());
+        factory.stop();
+        assertTrue(((ManageableThread)newThread).isShutdown());
+        newThread.start();
+        newThread.join();
+        assertTrue(r.isInterrupted);
+    }
+
     private void verifyThreadProperties(Thread thread, boolean isDaemon, int priority) {
         assertEquals(isDaemon, thread.isDaemon());
         assertEquals(priority, thread.getPriority());
@@ -100,5 +119,13 @@ public class ManagedThreadFactoryImplTest {
 
     private String getLoggerName() {
         return ManagedThreadFactoryImplTest.class.getName();
+    }
+    
+    static class TestRunnable implements Runnable {
+        boolean isInterrupted = false;
+        
+        public void run() {
+          isInterrupted = Thread.currentThread().isInterrupted();  
+        }
     }
 }

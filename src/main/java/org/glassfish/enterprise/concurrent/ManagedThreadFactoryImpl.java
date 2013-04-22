@@ -243,6 +243,10 @@ public class ManagedThreadFactoryImpl implements ManagedThreadFactory {
                 if (contextHandleForSetup != null) {
                     handle = contextSetupProvider.setup(contextHandleForSetup);
                 }
+                if (shutdown) {
+                    // start thread in interrupted state if already marked for shutdown
+                    this.interrupt();
+                }
                 super.run();
             } catch (ThreadExpiredException ex) {
                 Logger.getLogger("org.glassfish.enterprise.concurrent").log(Level.INFO, ex.toString());
