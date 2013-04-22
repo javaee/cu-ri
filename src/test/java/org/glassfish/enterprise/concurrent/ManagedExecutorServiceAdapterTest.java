@@ -49,8 +49,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -583,7 +585,29 @@ public class ManagedExecutorServiceAdapterTest  {
                 createManagedExecutor("testInvokeAny_exception", contextCallback);
         String result = instance.invokeAny(tasks); // expecting ExecutionException
     }
-    
+   
+    /**
+     * Test of invokeAny method where no tasks completes before timeout
+     * 
+     */
+    @Test(expected = TimeoutException.class)
+    public void testInvokeAny_timeout() throws Exception {
+        debug("invokeAny_timeout");
+        
+        final String classloaderName = "testInvokeAny_exception" + new Date(System.currentTimeMillis());
+        ClassloaderContextSetupProvider contextCallback = new ClassloaderContextSetupProvider(classloaderName);
+        ArrayList<Callable<String>> tasks = new ArrayList<>();
+        for (int i=0; i<2; i++) {
+            // set up 10 tasks. 9 of which throws leaving one returning good result.
+            String result = "result" + new Date(System.currentTimeMillis());        
+            Callable<String> task = Executors.callable(new BlockingRunnableImpl(null, 20000), "done" + i);
+            tasks.add(task);
+        }
+        ManagedExecutorService instance = 
+                createManagedExecutor("testInvokeAny_timeout", contextCallback);
+        String result = instance.invokeAny(tasks, 2, TimeUnit.SECONDS); // expecting TimeoutException
+    }
+ 
     /**
      * Test of invokeAny method with TaskListener
      */

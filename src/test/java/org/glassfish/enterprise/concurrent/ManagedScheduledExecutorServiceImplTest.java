@@ -50,17 +50,6 @@ import org.glassfish.enterprise.concurrent.test.TestContextService;
  */
 public class ManagedScheduledExecutorServiceImplTest extends ManagedExecutorServiceImplTest {
 
-    @Override
-    public void testShutdownNow_unfinishedTask() {
-        // @Ignore - Test fails. To be investigated.
-    }
-
-    @Override
-    public void testAwaitsTermination() throws Exception {
-        // @Ignore - Test fails. To be investigated.
-    }
-    
-    
     protected ManagedExecutorService createManagedExecutor(String name, ContextSetupProvider contextCallback) {
         return new ManagedScheduledExecutorServiceImpl(name, null, 0, false,
                     1,  

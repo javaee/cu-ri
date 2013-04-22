@@ -55,6 +55,8 @@ import javax.enterprise.concurrent.ManagedExecutorService;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService.RejectPolicy;
 import org.glassfish.enterprise.concurrent.spi.ContextSetupProvider;
 import org.glassfish.enterprise.concurrent.test.BlockingRunnableImpl;
+import org.glassfish.enterprise.concurrent.test.ManagedBlockingRunnableTask;
+import org.glassfish.enterprise.concurrent.test.ManagedTaskListenerImpl;
 import org.glassfish.enterprise.concurrent.test.RunnableImpl;
 import org.glassfish.enterprise.concurrent.test.TestContextService;
 import org.glassfish.enterprise.concurrent.test.Util;
@@ -84,6 +86,53 @@ public class ManagedExecutorServiceImplTest {
         assertTrue(mes.isShutdown());
     }
 
+    /** 
+     * Verifies that when the executor is shut down using shutdownNow()
+     * - all submitted tasks are cancelled if not running, and
+     * - all running task threads are interrupted, and
+     * - all registered ManagedTaskListeners are invoked
+     * 
+     **/
+    @Test
+    public void testShutdownNow_tasks_behavior() {
+        ManagedExecutorService mes = 
+                createManagedExecutor("testShutdown_tasks_behavior", 1, 2, 2); // core=1, queue=2
+        ManagedTaskListenerImpl listener1 = new ManagedTaskListenerImpl();
+        final BlockingRunnableImpl task1 = new ManagedBlockingRunnableTask(listener1, 0L);
+        Future f1 = mes.submit(task1); // this task should be run
+
+        ManagedTaskListenerImpl listener2 = new ManagedTaskListenerImpl();
+        BlockingRunnableImpl task2 = new ManagedBlockingRunnableTask(listener2, 0L);
+        Future f2 = mes.submit(task2); // this task should be queued
+
+        ManagedTaskListenerImpl listener3 = new ManagedTaskListenerImpl();
+        BlockingRunnableImpl task3 = new ManagedBlockingRunnableTask(listener3, 0L);
+        Future f3 = mes.submit(task3); // this task should be queued
+        // waits for task1 to start
+        Util.waitForTaskStarted(f1, listener1, getLoggerName());       
+        
+        mes.shutdownNow();
+
+        // task2 and task3 should be cancelled
+        Util.waitForTaskAborted(f2, listener2, getLoggerName());
+        assertTrue(f2.isCancelled());
+        assertTrue(listener2.eventCalled(f2, ManagedTaskListenerImpl.ABORTED));
+
+        Util.waitForTaskAborted(f3, listener3, getLoggerName());
+        assertTrue(f3.isCancelled());
+        assertTrue(listener3.eventCalled(f3, ManagedTaskListenerImpl.ABORTED));
+        
+        // task1 should be interrupted
+        Util.waitForBoolean(
+            new Util.BooleanValueProducer() {
+              public boolean getValue() {
+                return task1.isInterrupted();   
+              }
+            }, true, getLoggerName());        
+        assertTrue(task1.isInterrupted());
+    }
+
+
     /**
      * Test for shutdownNow to verify that we do not regress Java SE
      * ExecutorService functionality
@@ -109,8 +158,11 @@ public class ManagedExecutorServiceImplTest {
         ManagedExecutorService mes = 
                 createManagedExecutor("testShutdown_unfinishedTask", null);
         assertFalse(mes.isShutdown());
-        BlockingRunnableImpl task1 = new BlockingRunnableImpl(null, 0L);
-        mes.submit(task1);
+        ManagedTaskListenerImpl listener = new ManagedTaskListenerImpl();
+        BlockingRunnableImpl task1 = new ManagedBlockingRunnableTask(listener, 0L);
+        Future f = mes.submit(task1);
+        // waits for task to start
+        Util.waitForTaskStarted(f, listener, getLoggerName());
         RunnableImpl task2 = new RunnableImpl(null);
         mes.submit(task2); // this task cannot start until task1 has finished
         List<Runnable> tasks = mes.shutdownNow();
@@ -131,8 +183,11 @@ public class ManagedExecutorServiceImplTest {
         ManagedExecutorService mes = 
                 createManagedExecutor("testAwaitsTermination", null);
         assertFalse(mes.isShutdown());        
-        BlockingRunnableImpl task = new BlockingRunnableImpl(null, 0L);
-        mes.submit(task);
+        ManagedTaskListenerImpl listener = new ManagedTaskListenerImpl();
+        BlockingRunnableImpl task = new ManagedBlockingRunnableTask(listener, 0L);
+        Future f = mes.submit(task);
+        // waits for task to start
+        Util.waitForTaskStarted(f, listener, getLoggerName());
         mes.shutdown();
         try {
             assertFalse(mes.awaitTermination(1, TimeUnit.SECONDS));

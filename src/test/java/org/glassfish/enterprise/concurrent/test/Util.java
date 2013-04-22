@@ -66,6 +66,16 @@ public class Util {
       return value;      
     }
 
+    public static boolean waitForTaskStarted(final Future<?> future, final ManagedTaskListenerImpl listener, String loggerName) {
+      return waitForBoolean(
+          new BooleanValueProducer() {
+            public boolean getValue() {
+              return listener.eventCalled(future, listener.STARTING);
+            }
+          },
+          true, loggerName);
+    }
+
     public static boolean waitForTaskComplete(final RunnableImpl task, String loggerName) {
       return waitForBoolean(
           new BooleanValueProducer() {

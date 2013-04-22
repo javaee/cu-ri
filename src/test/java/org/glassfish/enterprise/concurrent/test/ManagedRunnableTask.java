@@ -39,7 +39,6 @@
  */
 package org.glassfish.enterprise.concurrent.test;
 
-import java.util.Locale;
 import java.util.Map;
 import javax.enterprise.concurrent.ManagedTask;
 import javax.enterprise.concurrent.ManagedTaskListener;
