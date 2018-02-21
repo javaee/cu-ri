@@ -72,11 +72,10 @@
     </licenses>
 
     <scm>
-        <url>http://java.net/projects/cu-javaee/sources/source-code-repository/show</url>
-        <connection>scm:svn:https://svn.java.net/svn/cu-javaee~source-code-repository/trunk</connection>
-        <developerConnection>scm:svn:https://svn.java.net/svn/cu-javaee~source-code-repository/trunk</developerConnection>
+        <url>https://github.com/javaee/cu-ri</url>
+        <connection>scm:git:https://github.com/javaee/cu-ri.git</connection>
+        <developerConnection>scm:git:git@github.com:javaee/cu-ri.git</developerConnection>
     </scm>
-
     <developers>
         <developer>
             <id>anthony.lai</id>
@@ -91,8 +90,8 @@
     </organization>
 
     <issueManagement>
-        <system>jira</system>
-        <url>http://java.net/jira/browse/CU_JAVAEE</url>
+        <system>GitHub</system>
+        <url>https://github.com/javaee/cu-ri/issues</url>
     </issueManagement>
 
     <properties>
